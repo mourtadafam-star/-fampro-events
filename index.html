@@ -4,141 +4,1484 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>FAMpro Events</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
-:root{--red:#b40008;--bg:#f5f5f6;--card:#fff;--text:#171717;--muted:#707070;--line:#e4e4e4;--green:#18753d}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text)}
-.app{max-width:520px;margin:auto;min-height:100vh;padding-bottom:90px}
-header{background:var(--red);color:#fff;padding:22px 18px;border-radius:0 0 22px 22px}
+:root{
+--red:#b40008;
+--bg:#f5f5f6;
+--card:#fff;
+--text:#171717;
+--muted:#707070;
+--line:#e4e4e4;
+--green:#18753d;
+}
+*{box-sizing:border-box}
+body{
+margin:0;
+background:var(--bg);
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+color:var(--text)
+}
+.app{
+max-width:520px;
+margin:auto;
+min-height:100vh;
+padding-bottom:90px
+}
+header{
+background:var(--red);
+color:#fff;
+padding:22px 18px;
+border-radius:0 0 22px 22px
+}
 .brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-size:23px;
-  font-weight:800;
+display:flex;
+align-items:center;
+gap:10px;
+font-size:23px;
+font-weight:800
 }
 .brand img{
-  height:55px;
-  width:55px;
-  object-fit:contain;
-  background:#fff;
-  border-radius:8px;
-  padding:3px;
-}{font-size:12px;opacity:.85}
-main{padding:15px}.hidden{display:none!important}.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.title{font-size:21px;font-weight:800;margin:12px 0}.card{background:#fff;border-radius:16px;padding:15px;margin-bottom:10px;box-shadow:0 2px 10px #0000000b}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.label{font-size:12px;color:var(--muted)}.value{font-size:22px;font-weight:800;margin-top:4px}
-input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:11px;background:#fff;font-size:15px;margin:5px 0 10px}
-label{display:block;font-size:12px;font-weight:700;margin-top:5px}
-.btn{border:0;background:var(--red);color:#fff;border-radius:11px;padding:11px 14px;font-weight:800}.btn.secondary{background:#eee;color:#222}.btn.small{font-size:12px;padding:8px 10px}
-.actions{display:flex;gap:8px;flex-wrap:wrap}.item{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}.badge{font-size:11px;padding:5px 8px;border-radius:20px;background:#e9f7ee;color:var(--green)}.warn{background:#fff1d6;color:#8b5a00}.empty{text-align:center;color:var(--muted);padding:25px}
-.search{margin:5px 0 12px}
-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(520px,100%);background:#fff;border-top:1px solid #ddd;display:grid;grid-template-columns:repeat(4,1fr);padding:8px 5px;z-index:5}
-nav button{border:0;background:none;color:#666;font-size:11px;padding:7px}nav button.active{color:var(--red);font-weight:800}
-.invoice{border:1px solid #ddd;padding:18px;border-radius:12px;background:#fff}.invoice h2{margin:0 0 4px}.invoice hr{border:0;border-top:1px solid #ddd;margin:12px 0}.right{text-align:right}
-@media print{nav,.actions,header{display:none!important}.app{max-width:none}.invoice{border:0}}
+height:55px;
+width:55px;
+object-fit:contain;
+background:#fff;
+border-radius:8px;
+padding:3px
+}
+.sub{
+font-size:12px;
+opacity:.85;
+margin-top:5px
+}
+main{padding:15px}
+.hidden{display:none!important}
+.top{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:8px
+}
+.title{
+font-size:21px;
+font-weight:800;
+margin:12px 0
+}
+.card{
+background:#fff;
+border-radius:16px;
+padding:15px;
+margin-bottom:10px;
+box-shadow:0 2px 10px #0000000b
+}
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px
+}
+.label{
+font-size:12px;
+color:var(--muted)
+}
+.value{
+font-size:22px;
+font-weight:800;
+margin-top:4px
+}
+input,select{
+width:100%;
+padding:12px;
+border:1px solid var(--line);
+border-radius:11px;
+background:#fff;
+font-size:15px;
+margin:5px 0 10px
+}
+label{
+display:block;
+font-size:12px;
+font-weight:700;
+margin-top:5px
+}
+.btn{
+border:0;
+background:var(--red);
+color:#fff;
+border-radius:11px;
+padding:11px 14px;
+font-weight:800
+}
+.btn.secondary{
+background:#eee;
+color:#222
+}
+.btn.small{
+font-size:12px;
+padding:8px 10px
+}
+.actions{
+display:flex;
+gap:8px;
+flex-wrap:wrap
+}
+.item{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:10px;
+margin-top:10px
+}
+.badge{
+font-size:11px;
+padding:5px 8px;
+border-radius:20px;
+background:#e9f7ee;
+color:var(--green)
+}
+.warn{
+background:#fff1d6;
+color:#8b5a00
+}
+.empty{
+text-align:center;
+color:var(--muted);
+padding:25px
+}
+.search{
+margin:5px 0 12px
+}
+nav{
+position:fixed;
+bottom:0;
+left:50%;
+transform:translateX(-50%);
+width:min(520px,100%);
+background:#fff;
+border-top:1px solid #ddd;
+display:grid;
+grid-template-columns:repeat(4,1fr);
+padding:8px 5px;
+z-index:5
+}
+nav button{
+border:0;
+background:none;
+color:#666;
+font-size:11px;
+padding:7px
+}
+nav button.active{
+color:var(--red);
+font-weight:800
+}
+.invoice{
+border:1px solid #ddd;
+padding:18px;
+border-radius:12px;
+background:#fff
+}
+.invoice h2{
+margin:0 0 4px
+}
+.invoice hr{
+border:0;
+border-top:1px solid #ddd;
+margin:12px 0
+}
+.loading{
+text-align:center;
+padding:25px;
+color:var(--muted)
+}
+.status{
+font-size:11px;
+padding:5px 8px;
+border-radius:20px;
+background:#e9f7ee;
+color:var(--green)
+}
+.error{
+background:#fff0f0;
+color:#a00000;
+padding:12px;
+border-radius:10px;
+margin-bottom:10px;
+font-size:13px
+}
+@media print{
+nav,.actions,header{display:none!important}
+.app{max-width:none}
+.invoice{border:0}
+}
 </style>
 </head>
+
 <body>
+
 <div class="app">
-<header><div class="brand"><img src="092508DF-3780-43EC-8976-384F9EF65BE0.png" alt="FAMPRO Events" style="height:55px;width:auto;object-fit:contain;margin-right:10px;">FAMpro Events</div><div class="sub">Clients · Paiements · Devis & factures</div></header>
-<main>
-<section id="home">
-<div class="top"><div class="title">Tableau de bord</div><button class="btn small" onclick="show('newClient')">+ Client</button></div>
-<div class="grid">
-<div class="card"><div class="label">Clients</div><div class="value" id="nClients">0</div></div>
-<div class="card"><div class="label">Réservations</div><div class="value" id="nRes">0</div></div>
-<div class="card"><div class="label">CA</div><div class="value" id="ca">0</div><div class="label">FCFA</div></div>
-<div class="card"><div class="label">Solde</div><div class="value" id="due">0</div><div class="label">FCFA</div></div>
+
+<header>
+<div class="brand">
+<img src="092508DF-3780-43EC-8976-384F9EF65BE0.png" alt="FAMpro Events">
+FAMpro Events
 </div>
-<div class="title">Dernières réservations</div><div id="recent"></div>
+<div class="sub">Clients · Réservations · Paiements · Devis & factures</div>
+</header>
+
+<main>
+
+<section id="home">
+
+<div class="top">
+<div class="title">Tableau de bord</div>
+<button class="btn small" onclick="show('newClient')">+ Client</button>
+</div>
+
+<div id="connection"></div>
+
+<div class="grid">
+
+<div class="card">
+<div class="label">Clients</div>
+<div class="value" id="nClients">0</div>
+</div>
+
+<div class="card">
+<div class="label">Réservations</div>
+<div class="value" id="nRes">0</div>
+</div>
+
+<div class="card">
+<div class="label">CA</div>
+<div class="value" id="ca">0</div>
+<div class="label">FCFA</div>
+</div>
+
+<div class="card">
+<div class="label">Solde</div>
+<div class="value" id="due">0</div>
+<div class="label">FCFA</div>
+</div>
+
+</div>
+
+<div class="title">Dernières réservations</div>
+<div id="recent">
+<div class="loading">Chargement...</div>
+</div>
+
 </section>
+
 
 <section id="clients" class="hidden">
-<div class="top"><div class="title">Clients</div><button class="btn small" onclick="show('newClient')">+ Nouveau</button></div>
-<input class="search" id="clientSearch" placeholder="Rechercher un client…" oninput="renderClients()"><div id="clientList"></div>
+
+<div class="top">
+<div class="title">Clients</div>
+<button class="btn small" onclick="show('newClient')">+ Nouveau</button>
+</div>
+
+<input
+class="search"
+id="clientSearch"
+placeholder="Rechercher un client…"
+oninput="renderClients()">
+
+<div id="clientList"></div>
+
 </section>
+
 
 <section id="newClient" class="hidden">
-<div class="top"><div class="title">Nouveau client</div><button class="btn secondary small" onclick="show('clients')">Retour</button></div>
-<div class="card">
-<label>Nom complet</label><input id="cname" placeholder="Ex. Awa Diagne">
-<label>Téléphone</label><input id="cphone" placeholder="77 123 45 67" inputmode="tel">
-<label>Adresse / ville</label><input id="caddr" placeholder="Koki">
-<label>Type d'événement</label><select id="rtype"><option>Mariage</option><option>Baptême</option><option>Cérémonie</option><option>Anniversaire</option><option>Autre</option></select>
-<label>Date</label><input id="rdate" type="date">
-<label>Lieu</label><input id="rplace" placeholder="Koki">
-<label>Montant total (FCFA)</label><input id="rprice" type="number" placeholder="450000">
-<label>Déjà payé (FCFA)</label><input id="rpaid" type="number" placeholder="200000">
-<label>Chaises</label><input id="rchairs" type="number" placeholder="200">
-<label>Matelas</label><input id="rmattresses" type="number" placeholder="0">
-<div class="actions"><button class="btn" onclick="addClient()">Enregistrer</button><button class="btn secondary" onclick="clearClient()">Effacer</button></div>
-</div></section>
 
-<section id="payments" class="hidden"><div class="title">Paiements</div><div id="paymentList"></div></section>
+<div class="top">
+<div class="title">Nouveau client</div>
+<button class="btn secondary small" onclick="show('clients')">Retour</button>
+</div>
+
+<div class="card">
+
+<label>Nom complet</label>
+<input id="cname" placeholder="Ex. Khalifa Diagne">
+
+<label>Téléphone</label>
+<input id="cphone" placeholder="77 123 45 67" inputmode="tel">
+
+<label>Adresse / ville</label>
+<input id="caddr" placeholder="Koki">
+
+<label>Type d'événement</label>
+<select id="rtype">
+<option>Mariage</option>
+<option>Baptême</option>
+<option>Cérémonie</option>
+<option>Anniversaire</option>
+<option>Autre</option>
+</select>
+
+<label>Date</label>
+<input id="rdate" type="date">
+
+<label>Lieu</label>
+<input id="rplace" placeholder="Koki">
+
+<label>Montant total (FCFA)</label>
+<input id="rprice" type="number" placeholder="450000">
+
+<label>Déjà payé (FCFA)</label>
+<input id="rpaid" type="number" placeholder="200000">
+
+<label>Chaises</label>
+<input id="rchairs" type="number" placeholder="200">
+
+<label>Matelas</label>
+<input id="rmattresses" type="number" placeholder="0">
+
+<div class="actions">
+<button class="btn" onclick="addClient()">Enregistrer</button>
+<button class="btn secondary" onclick="clearClient()">Effacer</button>
+</div>
+
+</div>
+
+</section>
+
+
+<section id="payments" class="hidden">
+
+<div class="title">Paiements</div>
+<div id="paymentList"></div>
+
+</section>
+
 
 <section id="invoice" class="hidden">
-<div class="top"><div class="title">Devis / Facture</div><button class="btn secondary small" onclick="show('payments')">Retour</button></div>
-<div id="invoiceContent"></div>
-<div class="actions" style="margin-top:10px"><button class="btn" onclick="window.print()">🖨️ Imprimer / PDF</button><button class="btn secondary" onclick="shareInvoice()">📲 Partager</button></div>
-</section>
-</main>
-<nav>
-<button class="active" onclick="show('home',this)">🏠<br>Accueil</button>
-<button onclick="show('clients',this)">👥<br>Clients</button>
-<button onclick="show('payments',this)">💰<br>Paiements</button>
-<button onclick="show('invoice',this)">🧾<br>Facture</button>
-</nav>
+
+<div class="top">
+<div class="title">Devis / Facture</div>
+<button class="btn secondary small" onclick="show('payments')">Retour</button>
 </div>
+
+<div id="invoiceContent"></div>
+
+<div class="actions" style="margin-top:10px">
+
+<button class="btn" onclick="window.print()">
+🖨️ Imprimer / PDF
+</button>
+
+<button class="btn secondary" onclick="shareInvoice()">
+📲 Partager
+</button>
+
+</div>
+
+</section>
+
+</main>
+
+
+<nav>
+
+<button class="active" onclick="show('home',this)">
+🏠<br>Accueil
+</button>
+
+<button onclick="show('clients',this)">
+👥<br>Clients
+</button>
+
+<button onclick="show('payments',this)">
+💰<br>Paiements
+</button>
+
+<button onclick="show('invoice',this)">
+🧾<br>Facture
+</button>
+
+</nav>
+
+</div>
+
+
 <script>
-const KEY='fampro_v4';
-let data=JSON.parse(localStorage.getItem(KEY)||'null')||{clients:[],reservations:[],payments:[]};
-function save(){localStorage.setItem(KEY,JSON.stringify(data));render()}
-function fmt(n){return new Intl.NumberFormat('fr-FR').format(Number(n)||0)}
+
+/* ==============================
+   SUPABASE
+============================== */
+
+const SUPABASE_URL =
+"https://paegdthtusbwxuarhacb.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_OBQ-QtNhsEX5GJvStmY5JQ_Z0QwaWNm";
+
+const supabaseClient =
+window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
+
+
+/* ==============================
+   DONNÉES
+============================== */
+
+let data = {
+clients:[],
+reservations:[],
+payments:[]
+};
+
+let currentReservation = null;
+
+
+/* ==============================
+   OUTILS
+============================== */
+
+function fmt(n){
+
+return new Intl.NumberFormat("fr-FR")
+.format(Number(n)||0);
+
+}
+
+
+function esc(value){
+
+return String(value ?? "")
+.replaceAll("&","&amp;")
+.replaceAll("<","&lt;")
+.replaceAll(">","&gt;")
+.replaceAll('"',"&quot;")
+.replaceAll("'","&#039;");
+
+}
+
+
+/* ==============================
+   NAVIGATION
+============================== */
+
 function show(id,btn){
-['home','clients','newClient','payments','invoice'].forEach(x=>document.getElementById(x).classList.add('hidden'));
-document.getElementById(id).classList.remove('hidden');
-document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active')); if(btn)btn.classList.add('active');
-render()
+
+[
+"home",
+"clients",
+"newClient",
+"payments",
+"invoice"
+].forEach(x=>{
+document.getElementById(x)
+.classList.add("hidden");
+});
+
+document.getElementById(id)
+.classList.remove("hidden");
+
+document.querySelectorAll("nav button")
+.forEach(x=>x.classList.remove("active"));
+
+if(btn) btn.classList.add("active");
+
+render();
+
 }
-function clearClient(){['cname','cphone','caddr','rplace','rprice','rpaid','rchairs','rmattresses'].forEach(x=>document.getElementById(x).value='');document.getElementById('rdate').value=''}
-function addClient(){
-const name=cname.value.trim(); if(!name){alert('Le nom du client est obligatoire.');return}
-const client={id:Date.now().toString(),name,phone:cphone.value.trim(),addr:caddr.value.trim()};
-data.clients.push(client);
-data.reservations.push({id:Date.now().toString(),client:name,phone:client.phone,type:rtype.value,date:rdate.value,place:rplace.value.trim(),price:Number(rprice.value)||0,paid:Number(rpaid.value)||0,t10:0,t200:0,t300:0,chairs:Number(rchairs.value)||0,mattresses:Number(rmattresses.value)||0});
-save();clearClient();show('clients')
+
+
+/* ==============================
+   CHARGEMENT SUPABASE
+============================== */
+
+async function loadData(){
+
+try{
+
+const clientsResult =
+await supabaseClient
+.from("clients")
+.select("*")
+.order("id",{ascending:false});
+
+if(clientsResult.error)
+throw clientsResult.error;
+
+
+const reservationsResult =
+await supabaseClient
+.from("reservations")
+.select("*")
+.order("id",{ascending:false});
+
+if(reservationsResult.error)
+throw reservationsResult.error;
+
+
+const paymentsResult =
+await supabaseClient
+.from("paiements")
+.select("*")
+.order("id",{ascending:false});
+
+if(paymentsResult.error)
+throw paymentsResult.error;
+
+
+data.clients =
+clientsResult.data || [];
+
+data.reservations =
+reservationsResult.data || [];
+
+data.payments =
+paymentsResult.data || [];
+
+
+document.getElementById("connection").innerHTML =
+`<div class="status">☁️ Données synchronisées</div>`;
+
+
+render();
+
+
+}catch(error){
+
+console.error(error);
+
+document.getElementById("connection").innerHTML =
+`<div class="error">
+⚠️ Impossible de charger les données.
+</div>`;
+
 }
-function resCard(r){
-const d=Math.max((r.price||0)-(r.paid||0),0);
-return `<div class="card"><div class="item"><div><b>${r.client}</b><div class="label">${r.type} · ${r.date||''} · ${r.place||''}</div></div><span class="badge ${d?'warn':''}">${d?'Solde':'Payée'}</span></div><hr><div class="item"><span>Total</span><b>${fmt(r.price)} FCFA</b></div><div class="item"><span>Payé</span><span>${fmt(r.paid)} FCFA</span></div><div class="item"><span>Reste</span><b>${fmt(d)} FCFA</b></div><button class="btn small" style="margin-top:10px" onclick="openInvoice('${r.id}')">Voir facture</button></div>`
+
 }
+
+
+/* ==============================
+   TABLEAU DE BORD
+============================== */
+
 function render(){
-nClients.textContent=data.clients.length;nRes.textContent=data.reservations.length;
-const ca=data.reservations.reduce((s,r)=>s+(+r.price||0),0),due=data.reservations.reduce((s,r)=>s+Math.max((+r.price||0)-(+r.paid||0),0),0);
-document.getElementById('ca').textContent=fmt(ca);document.getElementById('due').textContent=fmt(due);
-recent.innerHTML=data.reservations.slice().reverse().slice(0,4).map(resCard).join('')||'<div class="card empty">Aucune réservation.</div>';
-renderClients();renderPayments()
+
+const nClients =
+document.getElementById("nClients");
+
+const nRes =
+document.getElementById("nRes");
+
+if(!nClients) return;
+
+
+nClients.textContent =
+data.clients.length;
+
+nRes.textContent =
+data.reservations.length;
+
+
+const ca =
+data.reservations.reduce(
+(s,r)=>s+(Number(r.montant_total)||0),
+0
+);
+
+
+const due =
+data.reservations.reduce(
+(s,r)=>
+s+
+Math.max(
+(Number(r.montant_total)||0) -
+(Number(r.montant_paye)||0),
+0
+),
+0
+);
+
+
+document.getElementById("ca")
+.textContent=fmt(ca);
+
+document.getElementById("due")
+.textContent=fmt(due);
+
+
+renderRecent();
+renderClients();
+renderPayments();
+
 }
+
+
+/* ==============================
+   RÉSERVATIONS RÉCENTES
+============================== */
+
+function renderRecent(){
+
+const box =
+document.getElementById("recent");
+
+if(!box) return;
+
+
+const reservations =
+data.reservations
+.slice(0,4);
+
+
+if(!reservations.length){
+
+box.innerHTML =
+`<div class="card empty">
+Aucune réservation.
+</div>`;
+
+return;
+
+}
+
+
+box.innerHTML =
+reservations
+.map(resCard)
+.join("");
+
+}
+
+
+/* ==============================
+   CARTE RÉSERVATION
+============================== */
+
+function resCard(r){
+
+const total =
+Number(r.montant_total)||0;
+
+const paid =
+Number(r.montant_paye)||0;
+
+const due =
+Math.max(total-paid,0);
+
+
+return `
+
+<div class="card">
+
+<div class="item">
+
+<div>
+
+<b>${esc(
+r.client_nom ||
+r.client ||
+"Client"
+)}</b>
+
+<div class="label">
+${esc(
+r.type_evenement ||
+r.type ||
+"Événement"
+)}
+ ·
+${esc(
+r.date_evenement ||
+r.date ||
+""
+)}
+ ·
+${esc(
+r.lieu ||
+r.place ||
+""
+)}
+</div>
+
+</div>
+
+<span class="badge ${due?"warn":""}">
+${due?"Solde":"Payée"}
+</span>
+
+</div>
+
+<hr>
+
+<div class="item">
+<span>Total</span>
+<b>${fmt(total)} FCFA</b>
+</div>
+
+<div class="item">
+<span>Payé</span>
+<span>${fmt(paid)} FCFA</span>
+</div>
+
+<div class="item">
+<span>Reste</span>
+<b>${fmt(due)} FCFA</b>
+</div>
+
+<button
+class="btn small"
+style="margin-top:10px"
+onclick="openInvoice('${r.id}')">
+Voir facture
+</button>
+
+</div>
+`;
+
+}
+
+
+/* ==============================
+   CLIENTS
+============================== */
+
 function renderClients(){
-const q=(document.getElementById('clientSearch')?.value||'').toLowerCase();
-const list=data.clients.filter(c=>(c.name+c.phone+c.addr).toLowerCase().includes(q));
-clientList.innerHTML=list.map(c=>{const rs=data.reservations.filter(r=>r.client===c.name);const total=rs.reduce((s,r)=>s+(+r.price||0),0);return `<div class="card"><div class="item"><div><b>${c.name}</b><div class="label">${c.phone||''} · ${c.addr||''}</div></div><span class="badge">${rs.length} réservation(s)</span></div><div class="label" style="margin-top:9px">Total historique : ${fmt(total)} FCFA</div></div>`}).join('')||'<div class="card empty">Aucun client.</div>'
+
+const box =
+document.getElementById("clientList");
+
+if(!box) return;
+
+
+const q =
+(
+document.getElementById("clientSearch")
+?.value || ""
+).toLowerCase();
+
+
+const list =
+data.clients.filter(c=>
+
+(
+(c.nom||c.name||"")+
+(c.telephone||c.phone||"")+
+(c.adresse||c.addr||"")
+)
+.toLowerCase()
+.includes(q)
+
+);
+
+
+if(!list.length){
+
+box.innerHTML =
+`<div class="card empty">
+Aucun client.
+</div>`;
+
+return;
+
 }
+
+
+box.innerHTML =
+list.map(c=>{
+
+const name =
+c.nom ||
+c.name ||
+"Client";
+
+const phone =
+c.telephone ||
+c.phone ||
+"";
+
+const address =
+c.adresse ||
+c.addr ||
+"";
+
+const reservations =
+data.reservations.filter(r=>
+
+String(
+r.client_id ||
+r.client ||
+r.client_nom ||
+""
+) === String(c.id)
+||
+r.client_nom === name
+||
+r.client === name
+
+);
+
+
+const total =
+reservations.reduce(
+(s,r)=>s+(Number(r.montant_total)||0),
+0
+);
+
+
+return `
+
+<div class="card">
+
+<div class="item">
+
+<div>
+
+<b>${esc(name)}</b>
+
+<div class="label">
+${esc(phone)}
+${phone&&address?" · ":""}
+${esc(address)}
+</div>
+
+</div>
+
+<span class="badge">
+${reservations.length}
+réservation(s)
+</span>
+
+</div>
+
+<div class="label" style="margin-top:9px">
+Total historique :
+${fmt(total)} FCFA
+</div>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+
+/* ==============================
+   PAIEMENTS
+============================== */
+
 function renderPayments(){
-paymentList.innerHTML=data.reservations.map(r=>{const due=Math.max((r.price||0)-(r.paid||0),0);return `<div class="card"><div class="item"><div><b>${r.client}</b><div class="label">${r.date||''} · ${r.type}</div></div><b>${fmt(due)} FCFA</b></div><div class="label" style="margin-top:8px">Total ${fmt(r.price)} · déjà payé ${fmt(r.paid)} FCFA</div><div class="actions" style="margin-top:10px"><button class="btn small" onclick="addPayment('${r.id}')">+ Paiement</button><button class="btn secondary small" onclick="openInvoice('${r.id}')">Devis/Facture</button></div></div>`}).join('')||'<div class="card empty">Aucune réservation.</div>'
+
+const box =
+document.getElementById("paymentList");
+
+if(!box) return;
+
+
+if(!data.reservations.length){
+
+box.innerHTML =
+`<div class="card empty">
+Aucune réservation.
+</div>`;
+
+return;
+
 }
-function addPayment(id){
-const r=data.reservations.find(x=>x.id===id);if(!r)return;const v=prompt('Montant du paiement (FCFA) :','');if(v===null)return;const amount=Number(v);if(!amount||amount<=0){alert('Montant invalide.');return}if(amount>r.price-r.paid){alert('Le paiement dépasse le solde restant.');return}r.paid+=amount;data.payments.push({id:Date.now().toString(),reservationId:id,amount,date:new Date().toISOString()});save()
+
+
+box.innerHTML =
+data.reservations.map(r=>{
+
+const total =
+Number(r.montant_total)||0;
+
+const paid =
+Number(r.montant_paye)||0;
+
+const due =
+Math.max(total-paid,0);
+
+
+return `
+
+<div class="card">
+
+<div class="item">
+
+<div>
+
+<b>${esc(
+r.client_nom ||
+r.client ||
+"Client"
+)}</b>
+
+<div class="label">
+${esc(
+r.date_evenement ||
+r.date ||
+""
+)}
+ ·
+${esc(
+r.type_evenement ||
+r.type ||
+""
+)}
+</div>
+
+</div>
+
+<b>${fmt(due)} FCFA</b>
+
+</div>
+
+<div
+class="label"
+style="margin-top:8px">
+
+Total ${fmt(total)}
+ · déjà payé ${fmt(paid)} FCFA
+
+</div>
+
+<div
+class="actions"
+style="margin-top:10px">
+
+<button
+class="btn small"
+onclick="addPayment('${r.id}')">
+
++ Paiement
+
+</button>
+
+<button
+class="btn secondary small"
+onclick="openInvoice('${r.id}')">
+
+Devis/Facture
+
+</button>
+
+</div>
+
+</div>
+
+`;
+
+}).join("");
+
 }
+
+
+/* ==============================
+   NOUVEAU CLIENT
+============================== */
+
+function clearClient(){
+
+[
+"cname",
+"cphone",
+"caddr",
+"rplace",
+"rprice",
+"rpaid",
+"rchairs",
+"rmattresses"
+].forEach(id=>{
+document.getElementById(id).value="";
+});
+
+document.getElementById("rdate").value="";
+
+}
+
+
+async function addClient(){
+
+const name =
+document.getElementById("cname")
+.value.trim();
+
+if(!name){
+
+alert("Le nom du client est obligatoire.");
+
+return;
+
+}
+
+
+const phone =
+document.getElementById("cphone")
+.value.trim();
+
+const address =
+document.getElementById("caddr")
+.value.trim();
+
+const type =
+document.getElementById("rtype")
+.value;
+
+const date =
+document.getElementById("rdate")
+.value;
+
+const place =
+document.getElementById("rplace")
+.value.trim();
+
+const total =
+Number(document.getElementById("rprice").value)||0;
+
+const paid =
+Number(document.getElementById("rpaid").value)||0;
+
+const chairs =
+Number(document.getElementById("rchairs").value)||0;
+
+const mattresses =
+Number(document.getElementById("rmattresses").value)||0;
+
+
+if(paid>total){
+
+alert(
+"Le montant payé ne peut pas dépasser le montant total."
+);
+
+return;
+
+}
+
+
+try{
+
+const clientInsert =
+await supabaseClient
+.from("clients")
+.insert({
+
+nom:name,
+telephone:phone,
+adresse:address
+
+})
+.select()
+.single();
+
+
+if(clientInsert.error)
+throw clientInsert.error;
+
+
+const client =
+clientInsert.data;
+
+
+const reservationInsert =
+await supabaseClient
+.from("reservations")
+.insert({
+
+client_id:client.id,
+client_nom:name,
+type_evenement:type,
+date_evenement:date || null,
+lieu:place,
+montant_total:total,
+montant_paye:paid,
+chaises:chairs,
+matelas:mattresses
+
+})
+.select()
+.single();
+
+
+if(reservationInsert.error)
+throw reservationInsert.error;
+
+
+const reservation =
+reservationInsert.data;
+
+
+if(paid>0){
+
+const paymentInsert =
+await supabaseClient
+.from("paiements")
+.insert({
+
+reservation_id:reservation.id,
+montant:paid,
+date_paiement:new Date().toISOString()
+
+});
+
+
+if(paymentInsert.error)
+throw paymentInsert.error;
+
+}
+
+
+alert("Client et réservation enregistrés ☁️");
+
+clearClient();
+
+await loadData();
+
+show("clients");
+
+}catch(error){
+
+console.error(error);
+
+alert(
+"Erreur lors de l'enregistrement : "+
+(error.message || error)
+);
+
+}
+
+}
+
+
+/* ==============================
+   AJOUT PAIEMENT
+============================== */
+
+async function addPayment(id){
+
+const r =
+data.reservations.find(
+x=>String(x.id)===String(id)
+);
+
+if(!r) return;
+
+
+const total =
+Number(r.montant_total)||0;
+
+const paid =
+Number(r.montant_paye)||0;
+
+const remaining =
+Math.max(total-paid,0);
+
+
+if(remaining<=0){
+
+alert("Cette réservation est déjà entièrement payée.");
+
+return;
+
+}
+
+
+const value =
+prompt(
+"Montant du paiement (FCFA) :",
+""
+);
+
+if(value===null) return;
+
+
+const amount =
+Number(value);
+
+
+if(!amount || amount<=0){
+
+alert("Montant invalide.");
+
+return;
+
+}
+
+
+if(amount>remaining){
+
+alert(
+"Le paiement dépasse le solde restant."
+);
+
+return;
+
+}
+
+
+try{
+
+const paymentInsert =
+await supabaseClient
+.from("paiements")
+.insert({
+
+reservation_id:r.id,
+montant:amount,
+date_paiement:new Date().toISOString()
+
+});
+
+
+if(paymentInsert.error)
+throw paymentInsert.error;
+
+
+const newPaid =
+paid+amount;
+
+
+const update =
+await supabaseClient
+.from("reservations")
+.update({
+
+montant_paye:newPaid
+
+})
+.eq("id",r.id);
+
+
+if(update.error)
+throw update.error;
+
+
+alert("Paiement enregistré ☁️");
+
+await loadData();
+
+}catch(error){
+
+console.error(error);
+
+alert(
+"Erreur paiement : "+
+(error.message || error)
+);
+
+}
+
+}
+
+
+/* ==============================
+   FACTURE
+============================== */
+
 function openInvoice(id){
-const r=data.reservations.find(x=>x.id===id);if(!r)return;const num='FAM-'+r.id.slice(-6),due=(r.price||0)-(r.paid||0);
-document.getElementById('invoiceContent').innerHTML=`<div class="invoice"><h2>FAMpro Events</h2><div class="label">Location de matériel événementiel</div><hr><div class="item"><span><b>${due?'DEVIS / FACTURE':'FACTURE ACQUITTÉE'}</b></span><span>${num}</span></div><hr><b>Client</b><div>${r.client}</div><div>${r.phone||''}</div><div>${r.place||''}</div><hr><div class="item"><span>Événement</span><span>${r.type}</span></div><div class="item"><span>Date</span><span>${r.date||''}</span></div><div class="item"><span>Matériel</span><span>Location événementielle</span></div><hr><div class="item"><span>Total</span><b>${fmt(r.price)} FCFA</b></div><div class="item"><span>Déjà payé</span><span>${fmt(r.paid)} FCFA</span></div><div class="item"><span>Reste à payer</span><b>${fmt(due)} FCFA</b></div><hr><div class="label">Merci pour votre confiance — FAMpro Events</div></div>`;
-show('invoice')
+
+const r =
+data.reservations.find(
+x=>String(x.id)===String(id)
+);
+
+if(!r) return;
+
+
+currentReservation=r;
+
+
+const total =
+Number(r.montant_total)||0;
+
+const paid =
+Number(r.montant_paye)||0;
+
+const due =
+Math.max(total-paid,0);
+
+const num =
+"FAM-"+String(r.id).slice(-6);
+
+
+document.getElementById(
+"invoiceContent"
+).innerHTML=`
+
+<div class="invoice">
+
+<h2>FAMpro Events</h2>
+
+<div class="label">
+Location de matériel événementiel
+</div>
+
+<hr>
+
+<div class="item">
+
+<span>
+<b>
+${due
+?"DEVIS / FACTURE"
+:"FACTURE ACQUITTÉE"}
+</b>
+</span>
+
+<span>${num}</span>
+
+</div>
+
+<hr>
+
+<b>Client</b>
+
+<div>
+${esc(
+r.client_nom ||
+r.client ||
+""
+)}
+</div>
+
+<hr>
+
+<div class="item">
+<span>Événement</span>
+<span>
+${esc(
+r.type_evenement ||
+r.type ||
+""
+)}
+</span>
+</div>
+
+<div class="item">
+<span>Date</span>
+<span>
+${esc(
+r.date_evenement ||
+r.date ||
+""
+)}
+</span>
+</div>
+
+<div class="item">
+<span>Lieu</span>
+<span>
+${esc(
+r.lieu ||
+r.place ||
+""
+)}
+</span>
+</div>
+
+<hr>
+
+<div class="item">
+<span>Total</span>
+<b>${fmt(total)} FCFA</b>
+</div>
+
+<div class="item">
+<span>Déjà payé</span>
+<span>${fmt(paid)} FCFA</span>
+</div>
+
+<div class="item">
+<span>Reste à payer</span>
+<b>${fmt(due)} FCFA</b>
+</div>
+
+<hr>
+
+<div class="label">
+Merci pour votre confiance — FAMpro Events
+</div>
+
+</div>
+
+`;
+
+show("invoice");
+
 }
+
+
+/* ==============================
+   PARTAGE
+============================== */
+
 function shareInvoice(){
-const text='FAMpro Events — Devis/Facture. Merci pour votre confiance.';
-if(navigator.share)navigator.share({title:'FAMpro Events',text});else alert('Le partage rapide n’est pas disponible ici. Utilisez Imprimer / PDF puis partagez le fichier.')
+
+if(!currentReservation){
+
+alert("Aucune facture sélectionnée.");
+
+return;
+
 }
-render()
+
+
+const r =
+currentReservation;
+
+const total =
+Number(r.montant_total)||0;
+
+const paid =
+Number(r.montant_paye)||0;
+
+const due =
+Math.max(total-paid,0);
+
+
+const text =
+`FAMpro Events
+
+Client : ${r.client_nom || r.client || ""}
+Événement : ${r.type_evenement || r.type || ""}
+Date : ${r.date_evenement || r.date || ""}
+
+Total : ${fmt(total)} FCFA
+Payé : ${fmt(paid)} FCFA
+Reste : ${fmt(due)} FCFA
+
+Merci pour votre confiance.`;
+
+
+if(navigator.share){
+
+navigator.share({
+
+title:"FAMpro Events",
+text:text
+
+});
+
+}else{
+
+alert(
+"Le partage rapide n'est pas disponible."
+);
+
+}
+
+}
+
+
+/* ==============================
+   DÉMARRAGE
+============================== */
+
+loadData();
+
 </script>
-</body></html>
+
+</body>
+</html>
