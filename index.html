@@ -1485,3 +1485,20 @@ alert(
 
 </body>
 </html>
+
+<script>
+async function startAuthenticatedApp() {
+  const { data: { session }, error } = await supabaseClient.auth.getSession();
+  if (error || !session) {
+    window.location.replace('login.html');
+    return;
+  }
+  await loadData();
+}
+
+supabaseClient.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') window.location.replace('login.html');
+});
+
+startAuthenticatedApp();
+</script>
