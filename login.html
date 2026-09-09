@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connexion | FAMpro Évents</title>
+  <style>
+    :root{--blue:#1677c8;--ink:#102a43;--muted:#627d98;--line:#d9e2ec}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:linear-gradient(135deg,#e8f3fc,#f5f8fb)}
+    main{width:min(100%,420px);padding:34px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 45px #102a4320}
+    .brand{margin:0;color:var(--ink);font-size:26px;font-weight:800} h1{margin:28px 0 8px;font-size:22px} p{color:var(--muted);margin:0 0 24px} label{display:block;margin-bottom:8px;font-weight:650} input,button{width:100%;border-radius:10px;font:inherit} input{padding:12px 13px;border:1px solid #bcccdc} button{margin-top:16px;padding:13px;border:0;background:var(--blue);color:#fff;font-weight:750;cursor:pointer} button:disabled{opacity:.65;cursor:wait} #message{min-height:24px;margin:16px 0 0;font-size:14px}.success{color:#137333}.error{color:#b42318}.note{margin-top:20px;font-size:13px}
+  </style>
+</head>
+<body>
+  <main>
+    <p class="brand">FAMpro Évents</p>
+    <h1>Connexion sécurisée</h1>
+    <p>Entrez l’adresse e-mail autorisée. Nous vous enverrons un lien de connexion à usage unique.</p>
+    <form id="login-form">
+      <label for="email">Adresse e-mail</label>
+      <input id="email" name="email" type="email" autocomplete="email" required placeholder="vous@exemple.com">
+      <button id="submit" type="submit">Recevoir mon lien de connexion</button>
+      <p id="message" role="status" aria-live="polite"></p>
+    </form>
+    <p class="note">Les données clients restent privées et ne sont chargées qu’après connexion.</p>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://paegdthtusbwxuarhacb.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_OBQ-QtNhsEX5GJvStmY5JQ_Z0QwaWNm';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const form = document.querySelector('#login-form');
+    const button = document.querySelector('#submit');
+    const message = document.querySelector('#message');
+    const appUrl = new URL('./', window.location.href).href;
+    const showMessage = (text, type = '') => { message.textContent = text; message.className = type; };
+    async function redirectIfAlreadySignedIn() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) window.location.replace(appUrl);
+    }
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      button.disabled = true;
+      showMessage('Envoi du lien de connexion…');
+      const { error } = await supabase.auth.signInWithOtp({
+        email: form.email.value.trim(),
+        options: { emailRedirectTo: appUrl, shouldCreateUser: false }
+      });
+      button.disabled = false;
+      if (error) return showMessage(error.message, 'error');
+      showMessage('Lien envoyé. Consultez votre boîte e-mail avec ce même navigateur.', 'success');
+    });
+    redirectIfAlreadySignedIn();
+  </script>
+</body>
+</html>
