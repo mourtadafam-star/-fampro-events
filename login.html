@@ -26,31 +26,57 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const SUPABASE_URL = 'https://paegdthtusbwxuarhacb.supabase.co';
-    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_OBQ-QtNhsEX5GJvStmY5JQ_Z0QwaWNm';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-    const form = document.querySelector('#login-form');
-    const button = document.querySelector('#submit');
-    const message = document.querySelector('#message');
-    const appUrl = new URL('./', window.location.href).href;
-    const showMessage = (text, type = '') => { message.textContent = text; message.className = type; };
-    async function redirectIfAlreadySignedIn() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) window.location.replace(appUrl);
-    }
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      button.disabled = true;
-      showMessage('Envoi du lien de connexion…');
-      const { error } = await supabase.auth.signInWithOtp({
-        email: form.email.value.trim(),
-        options: { emailRedirectTo: appUrl, shouldCreateUser: false }
+    (() => {
+      const SUPABASE_URL = 'https://paegdthtusbwxuarhacb.supabase.co';
+      const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_OBQ-QtNhsEX5GJvStmY5JQ_Z0QwaWNm';
+      let supabaseClient;
+      const form = document.querySelector('#login-form');
+      const emailInput = document.querySelector('#email');
+      const button = document.querySelector('#submit');
+      const message = document.querySelector('#message');
+      // Keep the repository path when hosted on GitHub Pages.
+      const appUrl = new URL('./', window.location.href).href;
+      const showMessage = (text, type = '') => { message.textContent = text; message.className = type; };
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (button.disabled) return;
+        button.disabled = true;
+        showMessage('Envoi du lien de connexion…');
+        try {
+          const { error } = await supabaseClient.auth.signInWithOtp({
+            email: emailInput.value.trim(),
+            options: { emailRedirectTo: appUrl, shouldCreateUser: false }
+          });
+          if (error) {
+            showMessage(error.message, 'error');
+            return;
+          }
+          showMessage('Demande acceptée. Consultez votre boîte e-mail et vos courriers indésirables pour retrouver le lien de connexion.', 'success');
+        } catch (error) {
+          showMessage(error.message || 'Impossible d’envoyer le lien. Veuillez réessayer.', 'error');
+        } finally {
+          button.disabled = false;
+        }
       });
-      button.disabled = false;
-      if (error) return showMessage(error.message, 'error');
-      showMessage('Lien envoyé. Consultez votre boîte e-mail avec ce même navigateur.', 'success');
-    });
-    redirectIfAlreadySignedIn();
+      async function initializeAuth() {
+        try {
+          if (!window.supabase?.createClient) {
+            button.disabled = true;
+            showMessage('Le service de connexion n’a pas pu être chargé. Rechargez la page pour réessayer.', 'error');
+            return;
+          }
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+          const { data, error } = await supabaseClient.auth.getSession();
+          if (error) throw error;
+          if (data.session) window.location.replace(appUrl);
+        } catch (error) {
+          // A late session-check failure must not replace the form result.
+          if (!message.textContent) showMessage(error.message || 'Impossible de vérifier la session.', 'error');
+          if (!supabaseClient) button.disabled = true;
+        }
+      }
+      initializeAuth();
+    })();
   </script>
 </body>
 </html>
