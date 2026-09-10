@@ -228,6 +228,9 @@ nav,.actions,header{display:none!important}
 FAMpro Events
 </div>
 <div class="sub">Clients · Réservations · Paiements · Devis & factures</div>
+<div class="actions" style="margin-top:14px;justify-content:flex-end">
+<button id="logoutButton" type="button" class="btn secondary" onclick="signOut()">Déconnexion</button>
+</div>
 </header>
 
 <main>
@@ -1487,6 +1490,23 @@ alert(
 </html>
 
 <script>
+async function signOut() {
+  const button = document.getElementById('logoutButton');
+  if (button.disabled) return;
+  button.disabled = true;
+  button.textContent = 'Déconnexion…';
+  try {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) throw error;
+    window.location.replace('login.html');
+  } catch (error) {
+    console.error(error);
+    alert('Impossible de se déconnecter. Veuillez réessayer.');
+    button.disabled = false;
+    button.textContent = 'Déconnexion';
+  }
+}
+
 async function startAuthenticatedApp() {
   const { data: { session }, error } = await supabaseClient.auth.getSession();
   if (error || !session) {
@@ -1502,3 +1522,4 @@ supabaseClient.auth.onAuthStateChange((event) => {
 
 startAuthenticatedApp();
 </script>
+
