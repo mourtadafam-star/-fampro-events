@@ -166,6 +166,7 @@ createBrandedInvoicePdf=async function(){
   const totalAmount=total(r),paidAmount=paid(r),dueAmount=due(r);
   const materialItems=invoiceMaterialItems(r);
   const text=value=>invoicePdfText(value);
+  const formatDate=value=>value?new Date(`${value}T12:00:00`).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}):'Date à confirmer';
   const header=()=>{
     pdf.setFillColor(128,8,18);pdf.rect(0,0,210,28,'F');
     pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(18);pdf.text('FAMpro',18,14);pdf.setTextColor(236,204,208);pdf.text(' Évents',48,14);
@@ -177,7 +178,7 @@ createBrandedInvoicePdf=async function(){
   pdf.setTextColor(36,38,43);pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.text('FACTURÉ À',18,y);pdf.text('DÉTAILS DE L’ÉVÉNEMENT',112,y);
   y+=6;pdf.setFont('helvetica','normal');pdf.setFontSize(10);pdf.text(text(r.client?.nom||'Client'),18,y);
   pdf.setFontSize(8);pdf.setTextColor(88,92,99);pdf.text(text(r.client?.telephone||'—'),18,y+5);pdf.text(text(r.client?.adresse||''),18,y+10);
-  pdf.setTextColor(36,38,43);pdf.setFontSize(9);pdf.text(text(r.titre||'Événement'),112,y);pdf.setFontSize(8);pdf.setTextColor(88,92,99);pdf.text(text(dateFr(r.date)),112,y+5);pdf.text(text(r.lieu||'Lieu à confirmer'),112,y+10);
+  pdf.setTextColor(36,38,43);pdf.setFontSize(9);pdf.text(text(r.titre||'Événement'),112,y);pdf.setFontSize(8);pdf.setTextColor(88,92,99);pdf.text(text(formatDate(r.date)),112,y+5);pdf.text(text(r.lieu||'Lieu à confirmer'),112,y+10);
   y+=25;pdf.setDrawColor(232,224,225);pdf.line(18,y,192,y);y+=8;
   pdf.setTextColor(36,38,43);pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Matériel réservé',18,y);y+=5;
   if(materialItems.length){
