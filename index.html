@@ -161,45 +161,52 @@ createBrandedInvoicePdf=async function(){
   const jsPDF=window.jspdf?.jsPDF;
   if(!jsPDF){showToast('Le générateur PDF est indisponible');return null}
   const r=currentReservation;
-  const invoiceNumber=ensureInvoiceNumber(r);
+  const invoiceNumber=await ensureInvoiceNumber();
   const pdf=new jsPDF({unit:'mm',format:'a4'});
   const totalAmount=total(r),paidAmount=paid(r),dueAmount=due(r);
   const materialItems=invoiceMaterialItems(r);
   const text=value=>invoicePdfText(value);
   const formatDate=value=>value?new Date(`${value}T12:00:00`).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}):'Date à confirmer';
+  const tableHeader=top=>{
+    pdf.setFillColor(128,8,18);pdf.roundedRect(18,top,174,10,2,2,'F');pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(7);
+    pdf.text('ARTICLE',24,top+6.5);pdf.text('QTÉ',126,top+6.5,{align:'center'});pdf.text('PRIX UNIT.',153,top+6.5,{align:'right'});pdf.text('TOTAL',187,top+6.5,{align:'right'});
+  };
   const header=()=>{
-    pdf.setFillColor(128,8,18);pdf.rect(0,0,210,28,'F');
-    pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(18);pdf.text('FAMpro',18,14);pdf.setTextColor(236,204,208);pdf.text(' Évents',48,14);
-    pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);pdf.setTextColor(255,255,255);pdf.text('Location de matériel événementiel',18,20);
-    pdf.setFont('helvetica','bold');pdf.setFontSize(13);pdf.text('FACTURE',192,13,{align:'right'});pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.text(text(invoiceNumber),192,19,{align:'right'});
+    pdf.setFillColor(128,8,18);pdf.rect(0,0,210,42,'F');
+    pdf.setFillColor(255,255,255);pdf.roundedRect(18,8,27,25,2,2,'F');
+    if(invoiceLogo.complete&&invoiceLogo.naturalWidth){try{pdf.addImage(invoiceLogo,'PNG',21,10,21,21)}catch(error){pdf.setTextColor(128,8,18);pdf.setFont('helvetica','bold');pdf.setFontSize(7);pdf.text('FAMpro',31.5,22,{align:'center'})}}else{pdf.setTextColor(128,8,18);pdf.setFont('helvetica','bold');pdf.setFontSize(7);pdf.text('FAMpro',31.5,22,{align:'center'})}
+    pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(16);pdf.text('FAMpro Évents',51,17);pdf.setFont('helvetica','normal');pdf.setFontSize(6.8);pdf.text('Location de matériel événementiel',51,23);pdf.text('77 287 52 52 · mourtadafam@gmail.com',51,28);
+    pdf.setFont('helvetica','bold');pdf.setFontSize(15);pdf.text('FACTURE',192,16,{align:'right'});pdf.setFont('helvetica','normal');pdf.setFontSize(7.2);pdf.text(text(invoiceNumber||'En cours'),192,22,{align:'right'});pdf.text(`Émise le ${formatDate(new Date().toISOString().slice(0,10))}`,192,28,{align:'right'});
   };
   header();
-  let y=39;
-  pdf.setTextColor(36,38,43);pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.text('FACTURÉ À',18,y);pdf.text('DÉTAILS DE L’ÉVÉNEMENT',112,y);
-  y+=6;pdf.setFont('helvetica','normal');pdf.setFontSize(10);pdf.text(text(r.client?.nom||'Client'),18,y);
-  pdf.setFontSize(8);pdf.setTextColor(88,92,99);pdf.text(text(r.client?.telephone||'—'),18,y+5);pdf.text(text(r.client?.adresse||''),18,y+10);
-  pdf.setTextColor(36,38,43);pdf.setFontSize(9);pdf.text(text(r.titre||'Événement'),112,y);pdf.setFontSize(8);pdf.setTextColor(88,92,99);pdf.text(text(formatDate(r.date)),112,y+5);pdf.text(text(r.lieu||'Lieu à confirmer'),112,y+10);
-  y+=25;pdf.setDrawColor(232,224,225);pdf.line(18,y,192,y);y+=8;
-  pdf.setTextColor(36,38,43);pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Matériel réservé',18,y);y+=5;
+  let y=51;
+  pdf.setDrawColor(225,220,221);pdf.setFillColor(252,250,250);pdf.roundedRect(18,y,83,36,3,3,'FD');pdf.roundedRect(109,y,83,36,3,3,'FD');
+  pdf.setTextColor(128,8,18);pdf.setFont('helvetica','bold');pdf.setFontSize(7);pdf.text('FACTURÉ À',23,y+7);pdf.text('ÉVÉNEMENT',114,y+7);
+  pdf.setTextColor(34,35,39);pdf.setFontSize(10);pdf.text(text(r.client?.nom||'Client'),23,y+15);pdf.setFont('helvetica','normal');pdf.setFontSize(7.6);pdf.setTextColor(88,92,99);pdf.text(text(r.client?.telephone||'Téléphone non renseigné'),23,y+21);pdf.text(text(r.client?.adresse||'Adresse non renseignée'),23,y+27);
+  pdf.setTextColor(34,35,39);pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.text(text(r.titre||r.type_evenement||'Événement'),114,y+15);pdf.setFont('helvetica','normal');pdf.setFontSize(7.6);pdf.setTextColor(88,92,99);pdf.text(text(formatDate(r.date||r.date_evenement)),114,y+21);pdf.text(text(r.lieu||'Lieu à confirmer'),114,y+27);
+  y+=45;pdf.setTextColor(34,35,39);pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Détail de la réservation',18,y);y+=5;tableHeader(y);y+=13;
   if(materialItems.length){
     for(const item of materialItems){
-      if(y>174){pdf.addPage();header();y=42;pdf.setTextColor(36,38,43);pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Matériel réservé (suite)',18,y);y+=5}
-      pdf.setFillColor(250,248,248);pdf.roundedRect(18,y,174,25,2,2,'F');
+      if(y>184){pdf.addPage();header();y=52;pdf.setTextColor(34,35,39);pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Détail de la réservation (suite)',18,y);y+=5;tableHeader(y);y+=13}
+      pdf.setFillColor(255,255,255);pdf.setDrawColor(234,229,230);pdf.roundedRect(18,y,174,20,1.5,1.5,'FD');
       let image=await loadInvoiceImage(item.photo_url);
-      if(image){try{pdf.addImage(image,'JPEG',21,y+3,24,19)}catch(error){image=null}}
-      if(!image){pdf.setFillColor(238,225,226);pdf.roundedRect(21,y+3,24,19,2,2,'F');pdf.setTextColor(128,8,18);pdf.setFontSize(7);pdf.text('FAMpro',33,y+13,{align:'center'})}
-      pdf.setTextColor(36,38,43);pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.text(text(item.nom),50,y+10);
-      pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);pdf.setTextColor(88,92,99);pdf.text(`Quantité : ${item.quantite}`,50,y+16);pdf.text(`Prix unitaire : ${fmt(item.prix_unitaire)} FCFA`,105,y+16);pdf.text(`Sous-total : ${fmt(item.sous_total)} FCFA`,188,y+16,{align:'right'});y+=29;
+      if(image){try{pdf.addImage(image,'JPEG',21,y+2.5,18,15)}catch(error){image=null}}
+      if(!image){pdf.setFillColor(244,235,236);pdf.roundedRect(21,y+2.5,18,15,1,1,'F');pdf.setTextColor(128,8,18);pdf.setFont('helvetica','bold');pdf.setFontSize(5);pdf.text('FAMpro',30,y+11,{align:'center'})}
+      pdf.setTextColor(34,35,39);pdf.setFont('helvetica','bold');pdf.setFontSize(8.4);pdf.text(text(item.nom),44,y+8);
+      pdf.setFont('helvetica','normal');pdf.setFontSize(6.5);pdf.setTextColor(104,107,113);pdf.text('Matériel réservé',44,y+13.2);
+      pdf.setTextColor(34,35,39);pdf.setFontSize(8);pdf.text(String(item.quantite),126,y+11,{align:'center'});pdf.text(`${fmt(item.prix_unitaire)} FCFA`,153,y+11,{align:'right'});pdf.setFont('helvetica','bold');pdf.text(`${fmt(item.sous_total)} FCFA`,187,y+11,{align:'right'});y+=22;
     }
-  }else{pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(88,92,99);pdf.text('Aucun matériel renseigné pour cette réservation.',18,y+7);y+=15}
-  if(y+112>267){pdf.addPage();header();y=42}
-  pdf.setTextColor(36,38,43);pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Récapitulatif',18,y);y+=7;
-  const rows=[['Total de la réservation',totalAmount,[36,38,43]],['Avance versée',paidAmount,[23,125,70]],['Reste à payer',dueAmount,[186,32,43]]];
-  rows.forEach(([label,amount,color])=>{pdf.setFillColor(250,248,248);pdf.roundedRect(18,y,174,11,2,2,'F');pdf.setTextColor(...color);pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);pdf.text(text(label),22,y+7);pdf.text(`${fmt(amount)} FCFA`,188,y+7,{align:'right'});y+=13});
-  y+=2;pdf.setFillColor(255,248,237);pdf.setDrawColor(238,190,92);pdf.roundedRect(18,y,174,30,3,3,'FD');pdf.setTextColor(127,79,0);pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.text('Mode de paiement',23,y+7);pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);pdf.text(text(r.mode_paiement||'Espèces'),23,y+14);pdf.setTextColor(88,92,99);pdf.setFontSize(6.8);pdf.text('Paiement accepté : Wave, Orange Money ou espèces.',23,y+21);pdf.text('N° paiement : 77 287 52 52',23,y+26);y+=39;
-  pdf.setTextColor(36,38,43);pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.text('Conditions de paiement',18,y);y+=6;pdf.setFont('helvetica','normal');pdf.setFontSize(6.6);pdf.setTextColor(88,92,99);
-  ['Veuillez conserver cette facture comme preuve de réservation.','Le solde doit être réglé avant ou le jour de l’événement.','Merci de votre confiance.'].forEach(condition=>{const lines=pdf.splitTextToSize(`- ${condition}`,118);pdf.text(lines,18,y);y+=lines.length*4.2+1});
-  pdf.setFontSize(6.3);pdf.setTextColor(108,12,20);pdf.text('FAMpro Évents · 77 287 52 52 · mourtadafam@gmail.com',18,282);
-  return {pdf,file:new File([pdf.output('blob')],`FAMpro-Facture-${invoiceNumber}.pdf`,{type:'application/pdf'}),invoiceNumber};
+  }else{pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(88,92,99);pdf.text('Aucun matériel renseigné pour cette réservation.',22,y+7);y+=16}
+  if(y+101>226){pdf.addPage();header();y=54}
+  const summaryY=y+3;
+  pdf.setTextColor(34,35,39);pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Règlement',18,summaryY);
+  pdf.setFillColor(255,248,237);pdf.setDrawColor(238,190,92);pdf.roundedRect(18,summaryY+5,88,31,3,3,'FD');pdf.setTextColor(127,79,0);pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.text('Mode de paiement',23,summaryY+13);pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.text(text(r.mode_paiement||'Espèces'),23,summaryY+20);pdf.setFontSize(6.6);pdf.setTextColor(88,92,99);pdf.text('Wave · Orange Money · Espèces',23,summaryY+26);pdf.text('Paiement : 77 287 52 52',23,summaryY+31);
+  pdf.setFillColor(250,248,248);pdf.setDrawColor(225,220,221);pdf.roundedRect(112,summaryY+5,80,43,3,3,'FD');
+  const rows=[['Total',totalAmount,[34,35,39]],['Montant versé',paidAmount,[23,125,70]],['Reste à payer',dueAmount,[186,32,43]]];let rowY=summaryY+14;
+  rows.forEach(([label,amount,color],index)=>{if(index>0){pdf.setDrawColor(230,225,226);pdf.line(118,rowY-5,187,rowY-5)}pdf.setTextColor(88,92,99);pdf.setFont('helvetica','normal');pdf.setFontSize(7.4);pdf.text(label,118,rowY);pdf.setTextColor(...color);pdf.setFont('helvetica','bold');pdf.setFontSize(index===2?9:8.2);pdf.text(`${fmt(amount)} FCFA`,187,rowY,{align:'right'});rowY+=11});
+  y=summaryY+56;pdf.setTextColor(34,35,39);pdf.setFont('helvetica','bold');pdf.setFontSize(7.8);pdf.text('Conditions de paiement',18,y);y+=6;pdf.setFont('helvetica','normal');pdf.setFontSize(6.5);pdf.setTextColor(88,92,99);
+  ['Cette facture confirme la réservation indiquée ci-dessus.','Le solde doit être réglé avant ou le jour de l’événement.','Pour toute modification ou annulation, contactez FAMpro Évents.'].forEach(condition=>{const lines=pdf.splitTextToSize(`- ${condition}`,118);pdf.text(lines,18,y);y+=lines.length*4.1+1});
+  pdf.setDrawColor(225,220,221);pdf.line(18,275,192,275);pdf.setTextColor(108,12,20);pdf.setFont('helvetica','normal');pdf.setFontSize(6.4);pdf.text('FAMpro Évents · 77 287 52 52 · mourtadafam@gmail.com',18,282);
+  return {pdf,file:new File([pdf.output('blob')],`FAMpro-Facture-${invoiceNumber||'Facture'}.pdf`,{type:'application/pdf'}),invoiceNumber};
 };
 </script></body></html>
