@@ -19,11 +19,13 @@
   <main>
     <p class="brand">FAMpro Évents</p>
     <h1>Connexion sécurisée</h1>
-    <p>Entrez l’adresse e-mail autorisée. Nous vous enverrons un lien de connexion à usage unique.</p>
+    <p>Entrez votre adresse e-mail et votre mot de passe pour accéder à FAMpro Évents.</p>
     <form id="login-form">
       <label for="email">Adresse e-mail</label>
       <input id="email" name="email" type="email" autocomplete="email" required placeholder="vous@exemple.com">
-      <button id="submit" type="submit">Recevoir mon lien de connexion</button>
+      <label for="password" style="margin-top:16px">Mot de passe</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Votre mot de passe">
+      <button id="submit" type="submit">Se connecter</button>
       <p id="message" role="status" aria-live="polite"></p>
     </form>
     <p class="note">Les données clients restent privées et ne sont chargées qu’après connexion.</p>
@@ -36,28 +38,28 @@
       let supabaseClient;
       const form = document.querySelector('#login-form');
       const emailInput = document.querySelector('#email');
+      const passwordInput = document.querySelector('#password');
       const button = document.querySelector('#submit');
       const message = document.querySelector('#message');
-      // Keep the repository path when hosted on GitHub Pages.
       const appUrl = new URL('./', window.location.href).href;
       const showMessage = (text, type = '') => { message.textContent = text; message.className = type; };
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (button.disabled) return;
         button.disabled = true;
-        showMessage('Envoi du lien de connexion…');
+        showMessage('Connexion en cours…');
         try {
-          const { error } = await supabaseClient.auth.signInWithOtp({
+          const { error } = await supabaseClient.auth.signInWithPassword({
             email: emailInput.value.trim(),
-            options: { emailRedirectTo: appUrl, shouldCreateUser: false }
+            password: passwordInput.value
           });
           if (error) {
             showMessage(error.message, 'error');
             return;
           }
-          showMessage('Demande acceptée. Consultez votre boîte e-mail et vos courriers indésirables pour retrouver le lien de connexion.', 'success');
+          window.location.replace(appUrl);
         } catch (error) {
-          showMessage(error.message || 'Impossible d’envoyer le lien. Veuillez réessayer.', 'error');
+          showMessage(error.message || 'Impossible de se connecter. Vérifiez vos informations.', 'error');
         } finally {
           button.disabled = false;
         }
