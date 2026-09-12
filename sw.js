@@ -1,4 +1,4 @@
-const CACHE='fampro-events-v73';
+const CACHE='fampro-events-v74';
 const ASSETS=['./','./index.html','./login.html','./client.html','./manifest.webmanifest','./092508DF-3780-43EC-8976-384F9EF65BE0.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
