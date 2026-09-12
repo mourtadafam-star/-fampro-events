@@ -216,6 +216,8 @@ createBrandedInvoicePdf=async function(){
   const jsPDF=window.jspdf?.jsPDF;
   if(!jsPDF){showToast('Le générateur PDF est indisponible');return null}
   const r=currentReservation,invoiceNumber=await ensureInvoiceNumber(),pdf=new jsPDF({unit:'mm',format:'a4'});
+  const client=data.clients.find(item=>String(item.id)===String(r.client_id))||data.clients.find(item=>String(item.nom||'').trim().toLowerCase()===String(r.client_nom||'').trim().toLowerCase())||{};
+  const clientName=client.nom||r.client_nom||'Client',clientPhone=client.telephone||r.client_telephone||r.telephone||'Téléphone non renseigné',clientAddress=client.adresse||r.client_adresse||'';
   const text=value=>invoicePdfText(value),items=invoiceMaterialItems(r),formatDate=value=>value?new Date(`${value}T12:00:00`).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}):'Date à confirmer';
   const header=()=>{
     pdf.setFillColor(179,7,18);pdf.rect(0,0,210,42,'F');pdf.setFillColor(255,255,255);pdf.roundedRect(18,8,27,25,2,2,'F');
@@ -227,7 +229,7 @@ createBrandedInvoicePdf=async function(){
   let y=51;
   pdf.setDrawColor(225,220,221);pdf.setFillColor(252,250,250);pdf.roundedRect(18,y,83,29,3,3,'FD');pdf.roundedRect(109,y,83,29,3,3,'FD');
   pdf.setTextColor(179,7,18);pdf.setFont('helvetica','bold');pdf.setFontSize(7);pdf.text('CLIENT',23,y+7);pdf.text('RÉSERVATION',114,y+7);
-  pdf.setTextColor(34,35,39);pdf.setFontSize(9.4);pdf.text(text(r.client?.nom||'Client'),23,y+14);pdf.setFont('helvetica','normal');pdf.setFontSize(7.1);pdf.setTextColor(88,92,99);pdf.text(text(r.client?.telephone||'Téléphone non renseigné'),23,y+20);pdf.text(text(r.client?.adresse||''),23,y+25);
+  pdf.setTextColor(34,35,39);pdf.setFontSize(9.4);pdf.text(text(clientName),23,y+14);pdf.setFont('helvetica','normal');pdf.setFontSize(7.1);pdf.setTextColor(88,92,99);pdf.text(text(clientPhone),23,y+20);pdf.text(text(clientAddress),23,y+25);
   pdf.setTextColor(34,35,39);pdf.setFont('helvetica','bold');pdf.setFontSize(8.5);pdf.text(text(r.titre||r.type_evenement||'Événement'),114,y+14);pdf.setFont('helvetica','normal');pdf.setFontSize(7.1);pdf.setTextColor(88,92,99);pdf.text(text(formatDate(r.date||r.date_evenement)),114,y+20);pdf.text(text(r.lieu||'Lieu à confirmer'),114,y+25);
   y=88;pdf.setTextColor(34,35,39);pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Matériel réservé',18,y);y+=5;
   const renderItems=async(start,list)=>{
@@ -251,5 +253,18 @@ createBrandedInvoicePdf=async function(){
   ['Cette facture confirme la réservation indiquée ci-dessus.','Le solde doit être réglé avant ou le jour de l’événement.','Pour toute modification, contactez FAMpro Évents.'].forEach(condition=>{const lines=pdf.splitTextToSize(`- ${condition}`,118);pdf.text(lines,18,conditionsY);conditionsY+=lines.length*3.8+1});
   pdf.setDrawColor(225,220,221);pdf.line(18,275,192,275);pdf.setTextColor(108,12,20);pdf.setFontSize(6.2);pdf.text('FAMpro Events · 77 287 52 52 · mourtadafam@gmail.com',18,282);
   return {pdf,file:new File([pdf.output('blob')],`FAMpro-Facture-${invoiceNumber||'Facture'}.pdf`,{type:'application/pdf'}),invoiceNumber};
+};
+
+// Le reçu affiché dans l'application reprend aussi les coordonnées du client.
+const openInvoiceWithClientPhone=openInvoice;openInvoice=function(id){
+  openInvoiceWithClientPhone(id);
+  const reservation=data.reservations.find(item=>String(item.id)===String(id)),invoice=invoiceContent.querySelector('.invoice');
+  if(!reservation||!invoice||invoice.querySelector('.invoice-client-phone'))return;
+  const client=data.clients.find(item=>String(item.id)===String(reservation.client_id))||data.clients.find(item=>String(item.nom||'').trim().toLowerCase()===String(reservation.client_nom||'').trim().toLowerCase())||{};
+  const phone=client.telephone||reservation.client_telephone||reservation.telephone;
+  if(!phone)return;
+  const label=Array.from(invoice.querySelectorAll('b')).find(item=>item.textContent.trim()==='Client'),nameBlock=label?.nextElementSibling;
+  if(!nameBlock)return;
+  const contact=document.createElement('div');contact.className='small invoice-client-phone';contact.style.marginTop='3px';contact.textContent=`Téléphone : ${phone}`;nameBlock.insertAdjacentElement('afterend',contact);
 };
 </script></body></html>
