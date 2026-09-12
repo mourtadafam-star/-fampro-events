@@ -386,4 +386,25 @@ saveMaterialEdit=async function(id){
   }catch(error){alert('Impossible de modifier le matériel : '+(error.message||error))}
 };
 renderMaterial();
+
+/* Recherche rapide dans le stock. */
+const materialSearchStyle=document.createElement('style');
+materialSearchStyle.textContent='.material-stock-tools{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:8px;margin:14px 0}.material-stock-tools input,.material-stock-tools select{min-height:42px}@media(max-width:520px){.material-stock-tools{grid-template-columns:1fr}}';
+document.head.append(materialSearchStyle);
+function filterMaterialStock(){
+  const term=(document.getElementById('materialStockSearch')?.value||'').trim().toLocaleLowerCase('fr'),availability=document.getElementById('materialAvailabilityFilter')?.value||'all';
+  const cards=Array.from(materialList.querySelectorAll(':scope > .card')).filter(card=>!card.classList.contains('stock-editor')&&card.id!=='materialEditForm');
+  cards.forEach((card,index)=>{
+    const material=data.material[index],matchesText=!term||`${material?.nom||''} ${material?.categorie||''}`.toLocaleLowerCase('fr').includes(term),available=materialAvailability(new Date().toISOString().slice(0,10),material)>0,matchesAvailability=availability==='all'||(availability==='available'&&available)||(availability==='unavailable'&&!available);
+    card.style.display=matchesText&&matchesAvailability?'':'none';
+  });
+}
+const renderMaterialWithSearch=renderMaterial;renderMaterial=function(){
+  renderMaterialWithSearch();
+  if(document.getElementById('materialStockTools'))return;
+  const tools=document.createElement('div');tools.id='materialStockTools';tools.className='material-stock-tools';
+  tools.innerHTML='<input id="materialStockSearch" type="search" placeholder="Rechercher un matériel" oninput="filterMaterialStock()" aria-label="Rechercher un matériel"><select id="materialAvailabilityFilter" onchange="filterMaterialStock()" aria-label="Filtrer la disponibilité"><option value="all">Tout le matériel</option><option value="available">Disponible</option><option value="unavailable">Indisponible</option></select>';
+  materialList.querySelector('.stock-editor')?.insertAdjacentElement('afterend',tools);
+};
+renderMaterial();
 </script></body></html>
