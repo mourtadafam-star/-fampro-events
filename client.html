@@ -44,6 +44,21 @@ clientFaq.className='client-faq';clientFaq.setAttribute('aria-label','Questions 
 clientFaq.innerHTML='<div class="eyebrow" style="color:var(--red)">BESOIN D’AIDE ?</div><h2>Questions fréquentes</h2><details><summary>Comment réserver ?</summary><p>Choisissez votre matériel, remplissez votre demande avec la date et le lieu, puis FAMpro vous contacte pour confirmer.</p></details><details><summary>Ma date est-elle réservée dès l’envoi ?</summary><p>Non. Une date est réservée uniquement après la confirmation de FAMpro Évents. Nous vérifions toujours la disponibilité avant de valider.</p></details><details><summary>Quels moyens de paiement sont acceptés ?</summary><p>Vous pouvez régler par Wave, Orange Money ou en espèces, selon les modalités confirmées avec FAMpro.</p></details><details><summary>Dois-je créer un compte ?</summary><p>Ce n’est pas obligatoire pour envoyer une demande. Avec un compte, vous retrouvez ensuite vos réservations, paiements et factures.</p></details>';
 bookingSection?.insertAdjacentElement('beforebegin',clientFaq);
 
+const clientDraftKey='fampro-client-booking-draft-v1';
+const clientDraftFields=['nom','telephone','email','type','date','lieu','message'].map(id=>document.getElementById(id)).filter(Boolean);
+const clientDraftNote=document.createElement('div');
+clientDraftNote.className='client-draft-note';clientDraftNote.innerHTML='<span>✓ Brouillon enregistré sur cet appareil</span><button type="button">Effacer</button>';
+document.getElementById('form-message')?.insertAdjacentElement('afterend',clientDraftNote);
+const clientDraftStyle=document.createElement('style');
+clientDraftStyle.textContent='.client-draft-note{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;color:var(--muted);font-size:12px}.client-draft-note button{border:0;background:transparent;color:var(--red);font:inherit;font-size:12px;font-weight:800;cursor:pointer;padding:3px 0}.client-draft-note.is-empty{display:none}';
+document.head.append(clientDraftStyle);
+function saveClientDraft(){try{const values=Object.fromEntries(clientDraftFields.map(field=>[field.id,field.value]));const hasValue=Object.values(values).some(Boolean);if(hasValue)localStorage.setItem(clientDraftKey,JSON.stringify(values));else localStorage.removeItem(clientDraftKey);clientDraftNote.classList.toggle('is-empty',!hasValue)}catch(error){clientDraftNote.classList.add('is-empty')}}
+function clearClientDraft(){try{localStorage.removeItem(clientDraftKey)}catch(error){}clientDraftNote.classList.add('is-empty')}
+try{const savedDraft=JSON.parse(localStorage.getItem(clientDraftKey)||'null');if(savedDraft){clientDraftFields.forEach(field=>{if(typeof savedDraft[field.id]==='string')field.value=savedDraft[field.id]});clientDraftNote.classList.remove('is-empty')}else clientDraftNote.classList.add('is-empty')}catch(error){clearClientDraft()}
+clientDraftFields.forEach(field=>field.addEventListener('input',saveClientDraft));clientDraftFields.forEach(field=>field.addEventListener('change',saveClientDraft));
+clientDraftNote.querySelector('button').onclick=()=>{clientDraftFields.forEach(field=>{field.value=''});Object.keys(selectedClientMaterial).forEach(key=>delete selectedClientMaterial[key]);renderClientMaterialChoice();clearClientDraft()};
+new MutationObserver(()=>{if(document.getElementById('form-message')?.classList.contains('success'))clearClientDraft()}).observe(document.getElementById('form-message'),{attributes:true,attributeFilter:['class']});
+
 const clientQuickBarStyle=document.createElement('style');
 clientQuickBarStyle.textContent='.client-quick-bar{display:none}@media(max-width:700px){body{padding-bottom:72px}.client-quick-bar{position:fixed;z-index:20;bottom:0;left:0;right:0;display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:7px;padding:8px max(10px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-right));background:#fff;border-top:1px solid var(--line);box-shadow:0 -6px 20px #3c030814}.client-quick-bar a{display:grid;place-items:center;min-height:43px;border-radius:10px;background:#fff1f2;color:var(--red);font-size:12px;font-weight:850}.client-quick-bar a:last-child{background:var(--red);color:#fff}}';
 document.head.append(clientQuickBarStyle);
