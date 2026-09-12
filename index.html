@@ -439,4 +439,19 @@ const homeWithOverview=home;home=function(){
   document.getElementById('recent').insertAdjacentElement('beforebegin',overview);
 };
 home();
+
+/* Les indicateurs du tableau de bord ouvrent leur détail. */
+const dashboardMetricActionStyle=document.createElement('style');
+dashboardMetricActionStyle.textContent='.metric.metric-action{cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}.metric.metric-action:hover{transform:translateY(-2px);box-shadow:0 6px 18px #1d253019}.metric.metric-action:focus-visible{outline:3px solid #f1afb4;outline-offset:2px}';
+document.head.append(dashboardMetricActionStyle);
+const homeWithMetricActions=home;home=function(){
+  homeWithMetricActions();
+  [{id:'monthReservations',page:'reservations',label:'Voir les réservations'},{id:'pendingCount',page:'payments',label:'Voir les paiements en attente'},{id:'turnover',page:'reports',label:'Voir les rapports'},{id:'stockRate',page:'material',label:'Voir le matériel'}].forEach(action=>{
+    const card=document.getElementById(action.id)?.closest('.metric');
+    if(!card||card.dataset.dashboardAction)return;
+    card.dataset.dashboardAction='ready';card.classList.add('metric-action');card.tabIndex=0;card.setAttribute('role','button');card.setAttribute('aria-label',action.label);
+    const open=()=>show(action.page);card.addEventListener('click',open);card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();open()}});
+  });
+};
+home();
 </script></body></html>
