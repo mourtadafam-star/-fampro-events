@@ -310,4 +310,80 @@ cancelReservation=async function(id){
   const reservation=data.reservations.find(item=>String(item.id)===String(id));if(!reservation||!confirm('Annuler cette réservation ? Le matériel sera marqué comme retourné dans l’historique.'))return;
   try{const updated=await supabaseClient.from('reservations').update({statut:'Annulée'}).eq('id',id);if(updated.error)throw updated.error;const items=reservedItems(reservation);if(items.length){const movements=items.map(item=>({materiel_id:item.id,type:'Entrée',quantite:Number(item.quantite)||0,motif:'Retour - réservation annulée'})).filter(item=>item.quantite>0);if(movements.length){const logged=await supabaseClient.from('mouvements_stock').insert(movements);if(logged.error)console.error('Historique stock non enregistré',logged.error)}}await loadData();alert('Réservation annulée. Le retour du matériel est enregistré.')}catch(error){alert('Impossible d’annuler : '+(error.message||error))}
 };
+
+/* Photos du matériel : appareil photo ou galerie, sur ordinateur et téléphone. */
+const materialPhotoUploadStyle=document.createElement('style');
+materialPhotoUploadStyle.textContent=`
+  .material-upload-help{display:block;margin-top:6px;color:var(--muted);font-size:12px;line-height:1.35}
+  .material-photo-preview{display:flex;align-items:center;gap:10px;min-height:42px;margin-top:8px;color:var(--muted);font-size:12px}
+  .material-photo-preview img{width:54px;height:54px;border-radius:10px;object-fit:cover;border:1px solid var(--line)}
+  .material-file-input{width:100%;padding:9px;border:1px dashed var(--red);border-radius:10px;background:#fff}
+`;
+document.head.append(materialPhotoUploadStyle);
+
+function materialPhotoPreview(inputId,previewId){
+  const input=document.getElementById(inputId),preview=document.getElementById(previewId),file=input?.files?.[0];
+  if(!preview)return;
+  if(!file){preview.textContent='Aucune nouvelle photo sélectionnée.';return}
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)){input.value='';preview.textContent='Choisissez une image JPG, PNG ou WebP.';return}
+  if(file.size>5*1024*1024){input.value='';preview.textContent='La photo doit faire au maximum 5 Mo.';return}
+  const url=URL.createObjectURL(file);
+  preview.innerHTML=`<img src="${url}" alt="Aperçu de la photo"><span>${esc(file.name)}</span>`;
+}
+
+async function uploadMaterialPhoto(file){
+  if(!file)return null;
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Choisissez une image JPG, PNG ou WebP.');
+  if(file.size>5*1024*1024)throw new Error('La photo doit faire au maximum 5 Mo.');
+  const extension=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const unique=crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const path=`${unique}.${extension}`;
+  const uploaded=await supabaseClient.storage.from('materiel-images').upload(path,file,{cacheControl:'31536000',contentType:file.type,upsert:false});
+  if(uploaded.error)throw uploaded.error;
+  const publicUrl=supabaseClient.storage.from('materiel-images').getPublicUrl(uploaded.data.path);
+  return publicUrl.data.publicUrl;
+}
+
+const renderMaterialWithFileUpload=renderMaterial;renderMaterial=function(){
+  renderMaterialWithFileUpload();
+  const oldPicker=document.getElementById('stockPhoto');
+  if(oldPicker){
+    const field=oldPicker.parentElement;
+    field.innerHTML=`<label class="photo-select-label" for="stockPhotoFile">Photo du matériel</label><input id="stockPhotoFile" class="material-file-input" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onchange="materialPhotoPreview('stockPhotoFile','stockPhotoPreview')"><span class="material-upload-help">Choisissez une image dans la galerie ou prenez une photo. JPG, PNG ou WebP · 5 Mo maximum.</span><div id="stockPhotoPreview" class="material-photo-preview">Aucune photo sélectionnée.</div>`;
+  }
+};
+
+const editMaterialWithFileUpload=editMaterial;editMaterial=function(id){
+  editMaterialWithFileUpload(id);
+  const picker=document.getElementById('editMaterialPhoto');
+  if(!picker||document.getElementById('editMaterialPhotoFile'))return;
+  picker.insertAdjacentHTML('afterend',`<label class="photo-select-label" for="editMaterialPhotoFile" style="margin-top:12px">Remplacer par une photo de votre appareil</label><input id="editMaterialPhotoFile" class="material-file-input" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onchange="materialPhotoPreview('editMaterialPhotoFile','editMaterialPhotoPreview')"><div id="editMaterialPhotoPreview" class="material-photo-preview">Conservez la photo actuelle ou choisissez-en une nouvelle.</div>`);
+};
+
+addMaterial=async function(){
+  const nom=document.getElementById('stockName').value.trim(),categorie=document.getElementById('stockCategory').value.trim(),quantite=Number(document.getElementById('stockQuantity').value)||0,prix=Number(document.getElementById('stockPrice').value)||0,file=document.getElementById('stockPhotoFile')?.files?.[0];
+  if(!nom||quantite<1)return alert('Indiquez le nom et la quantité du matériel.');
+  try{
+    const photo=await uploadMaterialPhoto(file);
+    const created=await supabaseClient.from('materiel').insert({nom,categorie:categorie||null,quantite_totale:quantite,quantite_disponible:quantite,prix_location:prix,photo_url:photo}).select().single();
+    if(created.error)throw created.error;
+    const movement=await supabaseClient.from('mouvements_stock').insert({materiel_id:created.data.id,type:'Entrée',quantite,motif:'Ajout de matériel'});
+    if(movement.error)throw movement.error;
+    await loadData();alert('Matériel ajouté au stock.');
+  }catch(error){alert('Impossible d’ajouter le matériel : '+(error.message||error))}
+};
+
+saveMaterialEdit=async function(id){
+  const material=data.material.find(item=>String(item.id)===String(id)),nom=document.getElementById('editMaterialName').value.trim(),categorie=document.getElementById('editMaterialCategory').value.trim(),prix=Number(document.getElementById('editMaterialPrice').value)||0,total=Number(document.getElementById('editMaterialTotal').value)||0,available=Number(document.getElementById('editMaterialAvailable').value)||0,selectedPhoto=document.getElementById('editMaterialPhoto')?.value||null,file=document.getElementById('editMaterialPhotoFile')?.files?.[0],minimum=maxReservedMaterial(id);
+  if(!material||!nom)return alert('Le nom du matériel est obligatoire.');if(total<minimum)return alert(`La quantité totale ne peut pas être inférieure à ${minimum}.`);if(available>total)return alert('La quantité disponible ne peut pas dépasser la quantité totale.');
+  try{
+    const photo=file?await uploadMaterialPhoto(file):selectedPhoto;
+    const updated=await supabaseClient.from('materiel').update({nom,categorie:categorie||null,prix_location:prix,quantite_totale:total,quantite_disponible:available,photo_url:photo}).eq('id',id);
+    if(updated.error)throw updated.error;
+    const difference=available-Number(material.quantite_disponible||0);
+    if(difference){const movement=await supabaseClient.from('mouvements_stock').insert({materiel_id:id,type:difference>0?'Entrée':'Sortie',quantite:Math.abs(difference),motif:'Ajustement manuel du stock'});if(movement.error)throw movement.error}
+    editingMaterialId=null;await loadData();alert('Matériel modifié.');
+  }catch(error){alert('Impossible de modifier le matériel : '+(error.message||error))}
+};
+renderMaterial();
 </script></body></html>
