@@ -222,7 +222,7 @@ createBrandedInvoicePdf=async function(){
   const header=()=>{
     pdf.setFillColor(179,7,18);pdf.rect(0,0,210,42,'F');pdf.setFillColor(255,255,255);pdf.roundedRect(18,8,27,25,2,2,'F');
     if(invoiceLogo.complete&&invoiceLogo.naturalWidth){try{pdf.addImage(invoiceLogo,'PNG',21,10,21,21)}catch(error){}}else{pdf.setTextColor(179,7,18);pdf.setFont('helvetica','bold');pdf.setFontSize(7);pdf.text('FAMpro',31.5,22,{align:'center'})}
-    pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(16);pdf.text('FAMpro Events',51,17);pdf.setFont('helvetica','normal');pdf.setFontSize(6.8);pdf.text('Location de matériel événementiel',51,23);pdf.text('mourtadafam@gmail.com  ·  +221 77 287 52 52',51,28);
+    pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(16);pdf.text('FAMpro Events',51,17);pdf.setFont('helvetica','normal');pdf.setFontSize(6.8);pdf.text('Location de matériel événementiel',51,23);pdf.text('mourtadafam@gmail.com  ·  +221 77 287 52 52',51,28);pdf.setFont('helvetica','bold');pdf.setFontSize(6.2);pdf.text('Nous créons, vous célébrez.',51,34);
     pdf.setFont('helvetica','bold');pdf.setFontSize(15);pdf.text('FACTURE',192,16,{align:'right'});pdf.setFont('helvetica','normal');pdf.setFontSize(7.2);pdf.text(text(invoiceNumber||'En cours'),192,22,{align:'right'});pdf.text(`Date : ${formatDate(new Date().toISOString().slice(0,10))}`,192,28,{align:'right'});
   };
   header();
@@ -266,6 +266,12 @@ const openInvoiceWithClientPhone=openInvoice;openInvoice=function(id){
   const label=Array.from(invoice.querySelectorAll('b')).find(item=>item.textContent.trim()==='Client'),nameBlock=label?.nextElementSibling;
   if(!nameBlock)return;
   const contact=document.createElement('div');contact.className='small invoice-client-phone';contact.style.marginTop='3px';contact.textContent=`Téléphone : ${phone}`;nameBlock.insertAdjacentElement('afterend',contact);
+};
+const openInvoiceWithSlogan=openInvoice;openInvoice=function(id){
+  openInvoiceWithSlogan(id);
+  const invoice=invoiceContent.querySelector('.invoice'),title=invoice?.querySelector('h2');
+  if(!invoice||!title||invoice.querySelector('.invoice-slogan'))return;
+  const slogan=document.createElement('div');slogan.className='invoice-slogan';slogan.textContent='Nous créons, vous célébrez.';slogan.style.cssText='color:var(--red);font-size:12px;font-weight:800;margin:3px 0 10px';title.insertAdjacentElement('afterend',slogan);
 };
 // Historique des entrées et sorties de stock.
 data.mouvements=[];
