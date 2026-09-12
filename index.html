@@ -480,6 +480,13 @@ const homeWithPriorities=home;home=function(){
 };
 home();
 
+/* Améliorations de l'espace administrateur : mot de passe et en-tête téléphone. */
+const adminPolishStyle=document.createElement('style');
+adminPolishStyle.textContent='.admin-mobile-refresh{display:none}@media(max-width:759px){.head:after{display:none!important}.admin-mobile-refresh{display:grid;place-items:center;grid-column:3;grid-row:1;width:34px;height:34px;border:0;border-radius:9px;background:#ffffff1c;color:#fff;font-size:19px;cursor:pointer;padding:0}.admin-password-confirm{margin-top:10px}.admin-password-confirm label{display:block;margin-bottom:5px;font-size:12px;font-weight:750}.admin-password-confirm input{width:100%}}';
+document.head.append(adminPolishStyle);
+const adminRefreshButton=document.createElement('button');adminRefreshButton.type='button';adminRefreshButton.className='admin-mobile-refresh';adminRefreshButton.textContent='↻';adminRefreshButton.title='Actualiser les données';adminRefreshButton.setAttribute('aria-label','Actualiser les données');adminRefreshButton.onclick=()=>loadData();document.querySelector('.head').append(adminRefreshButton);
+const adminPasswordInput=document.getElementById('newPassword'),adminPasswordConfirmField=document.createElement('div');adminPasswordConfirmField.className='admin-password-confirm';adminPasswordConfirmField.innerHTML='<label for="confirmAdminPassword">Confirmer le mot de passe</label><input id="confirmAdminPassword" type="password" minlength="8" autocomplete="new-password" placeholder="Saisissez le même mot de passe">';adminPasswordInput?.insertAdjacentElement('afterend',adminPasswordConfirmField);const confirmAdminPassword=document.getElementById('confirmAdminPassword'),baseSetAdminPassword=setPassword;setPassword=async function(){if(!adminPasswordInput||adminPasswordInput.value!==confirmAdminPassword.value){alert('Les deux mots de passe doivent être identiques.');confirmAdminPassword?.focus();return}await baseSetAdminPassword();if(!adminPasswordInput.value)confirmAdminPassword.value=''};
+
 /* Slogan de marque présent dans l'administration, aussi sur téléphone. */
 const adminSloganStyle=document.createElement('style');
 adminSloganStyle.textContent='.app>header{background:linear-gradient(120deg,#780009,#b30712);border-color:#d6535c}.app>header .brand,.app>header .brand b,.app>header .icon{color:#fff}.app>header .sync{color:#ffe4e6}@media(min-width:760px){.desktop-menu .brand small{display:block;margin-top:4px;font-size:10px;font-weight:700;color:#ffd5d8;letter-spacing:.02em}}';
