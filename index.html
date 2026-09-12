@@ -422,4 +422,21 @@ const renderMaterialWithLowStockAlert=renderMaterial;renderMaterial=function(){
   (document.getElementById('materialStockTools')||materialList.firstElementChild)?.insertAdjacentElement('afterend',alertBox);
 };
 renderMaterial();
+
+/* Tableau de bord : raccourcis et résumé de la semaine. */
+const dashboardOverviewStyle=document.createElement('style');
+dashboardOverviewStyle.textContent=`
+  .dashboard-overview{margin:14px 0 2px}.dashboard-quick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 14px}.dashboard-quick button{min-height:64px;border:1px solid #f0dcde;border-radius:12px;background:#fff7f7;color:#780812;font:inherit;font-size:12px;font-weight:800;line-height:1.25}.dashboard-quick i{display:block;font-style:normal;font-size:20px;margin-bottom:4px}.week-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.week-summary>div{padding:11px 9px;border-radius:12px;background:#fff;border:1px solid var(--line)}.week-summary b{display:block;font-size:17px;margin-top:4px}.week-summary .small{font-size:11px}@media(min-width:760px){.dashboard-overview{display:grid;grid-template-columns:1.05fr 1fr;gap:13px;align-items:stretch}.dashboard-overview .section{margin-top:0}.dashboard-quick{margin-bottom:0}.week-summary{align-content:start}.week-summary>div{min-height:76px}}
+`;
+document.head.append(dashboardOverviewStyle);
+const homeWithOverview=home;home=function(){
+  homeWithOverview();
+  document.getElementById('dashboardOverview')?.remove();
+  const today=new Date();today.setHours(0,0,0,0);const end=new Date(today);end.setDate(end.getDate()+6);
+  const inWeek=data.reservations.filter(item=>{if(!isActiveReservation(item)||!item.date_evenement)return false;const date=new Date(`${item.date_evenement}T12:00:00`);return date>=today&&date<=end}),confirmed=inWeek.filter(item=>status(item)==='Confirmée').length,toReceive=inWeek.reduce((sum,item)=>sum+due(item),0);
+  const overview=document.createElement('section');overview.id='dashboardOverview';overview.className='dashboard-overview';
+  overview.innerHTML=`<div><div class="section">Actions rapides</div><div class="dashboard-quick"><button type="button" onclick="show('newReservation')"><i>＋</i>Réservation</button><button type="button" onclick="show('calendar')"><i>▦</i>Calendrier</button><button type="button" onclick="show('payments')"><i>₣</i>Paiements</button></div></div><div><div class="section">Les 7 prochains jours</div><div class="week-summary"><div><span class="small">Réservations</span><b>${inWeek.length}</b></div><div><span class="small">Confirmées</span><b style="color:var(--green)">${confirmed}</b></div><div><span class="small">À recevoir</span><b style="color:var(--orange)">${fmt(toReceive)}</b><span class="small">FCFA</span></div></div></div>`;
+  document.getElementById('recent').insertAdjacentElement('beforebegin',overview);
+};
+home();
 </script></body></html>
