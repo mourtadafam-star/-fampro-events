@@ -293,4 +293,21 @@ saveMaterialEdit=async function(id){
   try{const updated=await supabaseClient.from('materiel').update({nom,categorie:categorie||null,prix_location:prix,quantite_totale:total,quantite_disponible:available,photo_url:photo}).eq('id',id);if(updated.error)throw updated.error;const difference=available-Number(material.quantite_disponible||0);if(difference){const movement=await supabaseClient.from('mouvements_stock').insert({materiel_id:id,type:difference>0?'Entrée':'Sortie',quantite:Math.abs(difference),motif:'Ajustement manuel du stock'});if(movement.error)throw movement.error}editingMaterialId=null;await loadData();alert('Matériel modifié.')}catch(error){alert('Impossible de modifier le matériel : '+(error.message||error))}
 };
 loadData();
+
+saveReservation=async function(){
+  const selected=reservationClient.value,n=clientName.value.trim(),p=clientPhone.value.trim(),a=clientAddress.value.trim(),amount=Number(eventTotal.value)||0,paidNow=Number(eventPaid.value)||0,date=eventDate.value,items=selectedReservationMaterials();
+  if(!n)return alert('Le nom du client est obligatoire.');if(paidNow>amount)return alert('Le montant payé ne peut pas dépasser le total.');
+  const booked=date&&data.reservations.find(item=>item.date_evenement===date&&isActiveReservation(item));if(booked)return alert(`Cette date est déjà réservée pour ${name(booked)}. Choisissez une autre date.`);
+  for(const item of items){const material=data.material.find(entry=>String(entry.id)===String(item.id));if(!material||item.quantite>materialAvailability(date,material))return alert(`Quantité indisponible pour ${item.nom}.`)}
+  try{let clientId=selected;if(selected==='new'){const createdClient=await supabaseClient.from('clients').insert({nom:n,telephone:p,adresse:a}).select().single();if(createdClient.error)throw createdClient.error;clientId=createdClient.data.id}
+    const created=await supabaseClient.from('reservations').insert({client_id:clientId,client_nom:n,type_evenement:eventType.value,date_evenement:date||null,lieu:eventPlace.value.trim(),montant_total:amount,montant_paye:paidNow,statut:eventStatus.value,chaises:Number(eventChairs.value)||0,matelas:Number(eventMattresses.value)||0,notes:eventNotes.value.trim(),materiel_reserve:items}).select().single();if(created.error)throw created.error;
+    if(items.length){const movements=items.map(item=>({materiel_id:item.id,type:'Sortie',quantite:item.quantite,motif:`Réservation : ${eventType.value||'Événement'}${date?` · ${date}`:''}`}));const logged=await supabaseClient.from('mouvements_stock').insert(movements);if(logged.error)console.error('Historique stock non enregistré',logged.error)}
+    if(paidNow){const payment=await supabaseClient.from('paiements').insert({reservation_id:created.data.id,montant:paidNow,date_paiement:new Date().toISOString().slice(0,10),mode_paiement:'Espèces'});if(payment.error)throw payment.error}
+    alert('Réservation enregistrée avec le matériel réservé.');await loadData();show('reservations')
+  }catch(error){console.error(error);alert('Erreur : '+(error.message||error))}
+};
+cancelReservation=async function(id){
+  const reservation=data.reservations.find(item=>String(item.id)===String(id));if(!reservation||!confirm('Annuler cette réservation ? Le matériel sera marqué comme retourné dans l’historique.'))return;
+  try{const updated=await supabaseClient.from('reservations').update({statut:'Annulée'}).eq('id',id);if(updated.error)throw updated.error;const items=reservedItems(reservation);if(items.length){const movements=items.map(item=>({materiel_id:item.id,type:'Entrée',quantite:Number(item.quantite)||0,motif:'Retour - réservation annulée'})).filter(item=>item.quantite>0);if(movements.length){const logged=await supabaseClient.from('mouvements_stock').insert(movements);if(logged.error)console.error('Historique stock non enregistré',logged.error)}}await loadData();alert('Réservation annulée. Le retour du matériel est enregistré.')}catch(error){alert('Impossible d’annuler : '+(error.message||error))}
+};
 </script></body></html>
