@@ -480,6 +480,22 @@ const homeWithPriorities=home;home=function(){
 };
 home();
 
+/* Accès direct aux demandes reçues depuis le site client. */
+const dashboardClientRequestStyle=document.createElement('style');
+dashboardClientRequestStyle.textContent='.dashboard-client-requests{display:flex;align-items:center;gap:11px;width:100%;margin:12px 0;border:1px solid #f0dadd;border-radius:13px;background:#fff7f8;color:var(--ink);padding:12px;text-align:left;font:inherit;cursor:pointer}.dashboard-client-requests i{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--red);color:#fff;font-style:normal}.dashboard-client-requests b{display:block;font-size:13px}.dashboard-client-requests .meta{margin-top:2px}.dashboard-client-requests strong{margin-left:auto;color:var(--red);font-size:22px}';
+document.head.append(dashboardClientRequestStyle);
+function openDashboardClientRequests(){show('clientRequests')}
+const homeWithClientRequestSummary=home;home=function(){
+  homeWithClientRequestSummary();
+  document.getElementById('dashboardClientRequests')?.remove();
+  const requests=data.demandes_reservation||[],fresh=requests.filter(request=>request.statut==='Nouvelle').length,totalRequests=requests.length;
+  const summary=document.createElement('button');summary.type='button';summary.id='dashboardClientRequests';summary.className='dashboard-client-requests';summary.onclick=openDashboardClientRequests;
+  summary.innerHTML=`<i>🌐</i><span><b>${fresh?`${fresh} nouvelle${fresh>1?'s':''} demande${fresh>1?'s':''} client`:'Demandes clients'}</b><span class="meta">${totalRequests?`${totalRequests} demande${totalRequests>1?'s':''} reçue${totalRequests>1?'s':''} depuis le site`:'Aucune demande reçue pour le moment'}</span></span><strong>›</strong>`;
+  (document.getElementById('dashboardPriorities')||document.getElementById('recent'))?.insertAdjacentElement('afterend',summary);
+};
+const loadDataWithClientRequestSummary=loadData;loadData=async function(){await loadDataWithClientRequestSummary();home()};
+home();
+
 /* Améliorations de l'espace administrateur : mot de passe et en-tête téléphone. */
 const adminPolishStyle=document.createElement('style');
 adminPolishStyle.textContent='.admin-mobile-refresh{display:none}@media(max-width:759px){.head:after{display:none!important}.admin-mobile-refresh{display:grid;place-items:center;grid-column:3;grid-row:1;width:34px;height:34px;border:0;border-radius:9px;background:#ffffff1c;color:#fff;font-size:19px;cursor:pointer;padding:0}.admin-password-confirm{margin-top:10px}.admin-password-confirm label{display:block;margin-bottom:5px;font-size:12px;font-weight:750}.admin-password-confirm input{width:100%}}';
