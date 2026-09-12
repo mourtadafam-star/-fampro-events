@@ -407,4 +407,19 @@ const renderMaterialWithSearch=renderMaterial;renderMaterial=function(){
   materialList.querySelector('.stock-editor')?.insertAdjacentElement('afterend',tools);
 };
 renderMaterial();
+
+/* Alerte lorsque le matériel disponible est presque épuisé. */
+const lowStockAlertStyle=document.createElement('style');
+lowStockAlertStyle.textContent='.low-stock-alert{margin:0 0 14px;padding:13px 14px;border:1px solid #f1c7cb;border-radius:12px;background:#fff4f4}.low-stock-alert b{color:var(--red)}.low-stock-alert ul{margin:8px 0 0;padding-left:18px}.low-stock-alert li{margin:4px 0;font-size:13px}';
+document.head.append(lowStockAlertStyle);
+const renderMaterialWithLowStockAlert=renderMaterial;renderMaterial=function(){
+  renderMaterialWithLowStockAlert();
+  document.getElementById('lowStockAlert')?.remove();
+  const today=new Date().toISOString().slice(0,10),lowItems=data.material.map(item=>({item,available:materialAvailability(today,item)})).filter(({item,available})=>{const total=Number(item.quantite_totale)||0;return total>0&&available/total<=0.2});
+  if(!lowItems.length)return;
+  const alertBox=document.createElement('section');alertBox.id='lowStockAlert';alertBox.className='low-stock-alert';
+  alertBox.innerHTML=`<b>⚠️ Stock à surveiller</b><div class="small">Ces matériels sont presque épuisés pour aujourd’hui.</div><ul>${lowItems.map(({item,available})=>`<li><b>${esc(item.nom)}</b> : ${fmt(available)} disponible${available>1?'s':''} sur ${fmt(item.quantite_totale)}</li>`).join('')}</ul>`;
+  (document.getElementById('materialStockTools')||materialList.firstElementChild)?.insertAdjacentElement('afterend',alertBox);
+};
+renderMaterial();
 </script></body></html>
