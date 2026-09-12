@@ -454,4 +454,23 @@ const homeWithMetricActions=home;home=function(){
   });
 };
 home();
+
+/* Priorités calculées à partir des réservations et du stock du jour. */
+const dashboardPriorityStyle=document.createElement('style');
+dashboardPriorityStyle.textContent='.dashboard-priorities{margin:14px 0}.priority-list{display:grid;gap:8px}.priority-list button{display:flex;align-items:center;gap:10px;width:100%;border:1px solid var(--line);border-radius:11px;background:#fff;text-align:left;padding:10px;font:inherit}.priority-list button:active{background:#fff4f4}.priority-icon{width:32px;height:32px;display:grid;place-items:center;border-radius:9px;background:#fff0f1;font-size:16px}.priority-list b{display:block;font-size:13px}.priority-list .meta{margin-top:2px}';
+document.head.append(dashboardPriorityStyle);
+function openDashboardPriority(kind){
+  if(kind==='today')return openCalendarDay(new Date().toISOString().slice(0,10));
+  if(kind==='pending'){show('reservations');reservationFilter='En attente';renderReservations();return}
+  show('material');
+}
+const homeWithPriorities=home;home=function(){
+  homeWithPriorities();
+  document.getElementById('dashboardPriorities')?.remove();
+  const today=new Date().toISOString().slice(0,10),active=data.reservations.filter(isActiveReservation),todayCount=active.filter(item=>item.date_evenement===today).length,pending=active.filter(item=>status(item)==='En attente').length,low=data.material.filter(item=>{const total=Number(item.quantite_totale)||0;return total>0&&materialAvailability(today,item)/total<=0.2}).length;
+  const priority=document.createElement('section');priority.id='dashboardPriorities';priority.className='dashboard-priorities';
+  priority.innerHTML=`<div class="section">Priorités du jour</div><div class="priority-list"><button type="button" onclick="openDashboardPriority('today')"><span class="priority-icon">📆</span><span><b>${todayCount?`${todayCount} réservation${todayCount>1?'s':''} aujourd’hui`:'Aucune réservation aujourd’hui'}</b><span class="meta">Voir le planning</span></span></button><button type="button" onclick="openDashboardPriority('pending')"><span class="priority-icon">⏳</span><span><b>${pending?`${pending} réservation${pending>1?'s':''} à confirmer`:'Aucune réservation à confirmer'}</b><span class="meta">Ouvrir les réservations</span></span></button><button type="button" onclick="openDashboardPriority('stock')"><span class="priority-icon">📦</span><span><b>${low?`${low} matériel${low>1?'s':''} à surveiller`:'Stock sous contrôle'}</b><span class="meta">Voir le matériel</span></span></button></div>`;
+  (document.getElementById('dashboardOverview')||document.getElementById('recent'))?.insertAdjacentElement('afterend',priority);
+};
+home();
 </script></body></html>
