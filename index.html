@@ -476,7 +476,7 @@ home();
 
 /* Slogan de marque présent dans l'administration, aussi sur téléphone. */
 const adminSloganStyle=document.createElement('style');
-adminSloganStyle.textContent='header .admin-slogan{margin:4px 0 0 46px;color:var(--blue);font-size:10px;font-weight:850;letter-spacing:.03em}@media(max-width:759px){header .admin-slogan{margin:3px 0 0;text-align:center;font-size:9px}}@media(min-width:760px){.desktop-menu .brand small{display:block;margin-top:4px;font-size:10px;font-weight:700;color:#ffd5d8;letter-spacing:.02em}}';
+adminSloganStyle.textContent='.app>header{background:linear-gradient(120deg,#780009,#b30712);border-color:#d6535c}.app>header .brand,.app>header .brand b,.app>header .icon{color:#fff}.app>header .sync{color:#ffe4e6}header .admin-slogan{margin:4px 0 0 46px;color:#fff;font-size:10px;font-weight:850;letter-spacing:.03em}@media(max-width:759px){header .admin-slogan{margin:3px 0 0;text-align:center;font-size:9px}}@media(min-width:760px){.desktop-menu .brand small{display:block;margin-top:4px;font-size:10px;font-weight:700;color:#ffd5d8;letter-spacing:.02em}}';
 document.head.append(adminSloganStyle);
 const adminHeader=document.querySelector('header'),adminHead=adminHeader?.querySelector('.head');
 if(adminHeader&&adminHead&&!adminHeader.querySelector('.admin-slogan')){const slogan=document.createElement('div');slogan.className='admin-slogan';slogan.textContent='Nous créons, vous célébrez.';adminHead.insertAdjacentElement('afterend',slogan)}
