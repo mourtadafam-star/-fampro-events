@@ -379,7 +379,7 @@ saveMaterialEdit=async function(id){
     editingMaterialId=null;await loadData();alert('Matériel modifié.');
   }catch(error){alert('Impossible de modifier le matériel : '+(error.message||error))}
 };
-renderMaterial();
+renderMaterial();const clientAccountsSummary=document.createElement('div');clientAccountsSummary.id='clientAccountsSummary';clientAccountsSummary.className='card';clientAccountsSummary.style.cssText='margin:12px 0;background:#fff7f7;border-color:#f1d8da';document.getElementById('clientSearch')?.insertAdjacentElement('afterend',clientAccountsSummary);const renderClientsWithAccounts=renderClients;renderClients=function(){renderClientsWithAccounts();const accounts=(data.clients||[]).filter(client=>client.auth_user_id);clientAccountsSummary.innerHTML=`<div class="row"><span><b>👤 Comptes clients</b><br><span class="small">${accounts.length} compte${accounts.length>1?'s':''} créé${accounts.length>1?'s':''}</span></span><span class="small">Les mots de passe restent privés.</span></div>`};renderClients();
 
 /* Recherche rapide dans le stock. */
 const materialSearchStyle=document.createElement('style');
