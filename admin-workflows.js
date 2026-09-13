@@ -42,6 +42,7 @@ loadData=function(){
    const visible=document.querySelector('main > section:not(.hidden)');
    if(visible&&!missionEditor)renderView(visible.id);
    label.textContent='● Données synchronisées';
+   try{if('Notification' in window)sendPhoneReminder();}catch(error){console.warn('Rappel local indisponible',error);}
    return true;
   }catch(error){console.error(error);label.textContent='⚠ Synchronisation impossible — données non actualisées';return false;}
  })().finally(()=>{adminLoadPending=null;});
@@ -121,7 +122,8 @@ savePaymentModal=async function(){return workflowRun('payment',async()=>{
  const signature=JSON.stringify([id,amount,method]);
  if(paymentAttempt&&paymentAttempt.signature!==signature)throw new Error('Vérifiez d’abord le résultat du paiement précédent en actualisant les données.');
  paymentAttempt||={signature,id:crypto.randomUUID()};
- await workflowRpc('admin_record_payment',{p_reservation:id,p_amount:amount,p_method:method,p_id:paymentAttempt.id});
+ try{await workflowRpc('admin_record_payment',{p_reservation:id,p_amount:amount,p_method:method,p_id:paymentAttempt.id});}
+ catch(error){if(error.code&&error.code!=='PGRST000')paymentAttempt=null;throw error;}
  paymentAttempt=null;closePaymentModal();const loaded=await loadData();
  alert(loaded?'Paiement enregistré.':'Paiement enregistré. Actualisez pour afficher le nouveau solde.');
 });};
