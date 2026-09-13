@@ -128,7 +128,7 @@ savePaymentModal=async function(){return workflowRun('payment',async()=>{
  alert(loaded?'Paiement enregistré.':'Paiement enregistré. Actualisez pour afficher le nouveau solde.');
 });};
 saveReservation=async function(){return workflowRun('reservation',async()=>{
- const payload={client_id:reservationClient.value,client_nom:clientName.value.trim(),telephone:clientPhone.value.trim(),adresse:clientAddress.value.trim(),type_evenement:eventType.value,date_evenement:eventDate.value,lieu:eventPlace.value.trim(),montant_total:Number(eventTotal.value),montant_paye:Number(eventPaid.value),statut:eventStatus.value,chaises:Number(eventChairs.value)||0,matelas:Number(eventMattresses.value)||0,notes:eventNotes.value.trim(),materiel_reserve:selectedReservationMaterials()};
+ const payload={client_id:reservationClient.value,client_nom:clientName.value.trim(),telephone:clientPhone.value.trim(),adresse:clientAddress.value.trim(),type_evenement:eventType.value,date_evenement:eventDate.value,lieu:eventPlace.value.trim(),montant_total:Number(eventTotal.value),montant_paye:Number(eventPaid.value),statut:eventStatus.value,chaises:Number(eventChairs.value)||0,matelas:Number(eventMattresses.value)||0,notes:eventNotes.value.trim(),materiel_reserve:selectedReservationMaterials(),request_id:sourceClientRequest?.id||null,client_user_id:sourceClientRequest?.client_user_id||null};
  if(!payload.client_nom||!payload.date_evenement)throw new Error('Indiquez le client et la date.');
  if(!Number.isFinite(payload.montant_total)||!Number.isFinite(payload.montant_paye)||payload.montant_total<0||payload.montant_paye<0||payload.montant_paye>payload.montant_total)throw new Error('Vérifiez les montants de la réservation.');
  const signature=JSON.stringify(payload);
@@ -136,7 +136,7 @@ saveReservation=async function(){return workflowRun('reservation',async()=>{
  reservationAttempt||={signature,id:crypto.randomUUID()};
  try{await workflowRpc('admin_create_reservation',{p_data:payload,p_id:reservationAttempt.id});}
  catch(error){if(error.code&&error.code!=='PGRST000')reservationAttempt=null;throw error;}
- reservationAttempt=null;await loadData();show('reservations');alert('Réservation enregistrée.');
+ reservationAttempt=null;sourceClientRequest=null;await loadData();show('reservations');alert('Réservation enregistrée et synchronisée avec le compte client.');
 });};
 cancelReservation=async function(id){if(!confirm('Annuler cette réservation ?'))return;return workflowRun(`reservation-${id}`,async()=>{
  await workflowRpc('admin_cancel_reservation',{p_reservation:id});await loadData();alert('Réservation annulée.');
