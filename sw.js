@@ -1,5 +1,5 @@
-const CACHE='fampro-events-v100';
-const ASSETS=['./','./index.html','./admin-workflows.js?v=100','./login.html','./client.html','./manifest.webmanifest','./client.webmanifest','./092508DF-3780-43EC-8976-384F9EF65BE0.png'];
+const CACHE='fampro-events-v101';
+const ASSETS=['./','./index.html','./admin-workflows.js?v=101','./login.html','./client.html','./manifest.webmanifest','./client.webmanifest','./092508DF-3780-43EC-8976-384F9EF65BE0.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('fampro-events-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
