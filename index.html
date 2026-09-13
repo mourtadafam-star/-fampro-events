@@ -130,7 +130,8 @@ const materialPhotoCatalog=[
   {file:'chaise-rouge.jpeg',label:'Chaises rouges',category:'Chaises'},
   {file:'chaise-transparente.jpeg',label:'Chaises transparentes',category:'Chaises'},
   {file:'estrade-rouge.jpeg',label:'Estrade rouge',category:'Scène'},
-  {file:'tente-10x20.jpeg',label:'Tente 10 × 20 m',category:'Tentes'}
+  {file:'tente-10x20.jpeg',label:'Tente 10 × 20 m',category:'Tentes'},
+  {file:'table-doree.png',label:'Table dorée',category:'Mobilier'}
 ];
 const materialPhotoStyle=document.createElement('style');materialPhotoStyle.textContent='.material-photo{width:74px;height:58px;object-fit:cover;border-radius:10px;border:1px solid #eee2e4;margin-right:11px;flex:0 0 auto}.photo-select-label{display:block;font-size:13px;font-weight:750;margin-bottom:4px}.photo-select{width:100%;min-height:42px}';document.head.append(materialPhotoStyle);
 function photoOptions(selected=''){return `<option value="">Aucune photo</option>${materialPhotoCatalog.map(photo=>`<option value="${photo.file}"${photo.file===selected?' selected':''}>${photo.label}</option>`).join('')}`}
