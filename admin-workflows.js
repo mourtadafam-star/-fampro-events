@@ -192,7 +192,7 @@ function downloadWorkflowPdf(page,r,details){
    doc.heading('Matériel à préparer');
    const items=invoiceMaterialItems(r);
    if(!items.length)doc.paragraph('Aucun matériel renseigné.');
-   items.forEach(item=>doc.paragraph(`[  ] ${item.nom} — Quantité : ${item.quantite}`));
+   items.forEach(item=>doc.paragraph(`[  ] ${item.nom} — Quantité : ${materialQuantity(item.quantite,item)}`));
    doc.space(80);doc.heading('Contrôle opérationnel');
    ['Chargement vérifié','Livraison effectuée','Installation terminée','Retour du matériel confirmé'].forEach(s=>doc.paragraph('[  ] '+s));
   }else{
