@@ -481,7 +481,7 @@ const homeWithClientRequestSummary=home;home=function(){
   summary.innerHTML=`<i>🌐</i><span><b>${fresh?`${fresh} nouvelle${fresh>1?'s':''} demande${fresh>1?'s':''} client`:'Demandes clients'}</b><span class="meta">${totalRequests?`${totalRequests} demande${totalRequests>1?'s':''} reçue${totalRequests>1?'s':''} depuis le site`:'Aucune demande reçue pour le moment'}</span></span><strong>›</strong>`;
   (document.getElementById('dashboardPriorities')||document.getElementById('recent'))?.insertAdjacentElement('afterend',summary);
 };
-const loadDataWithClientRequestSummary=loadData;loadData=async function(){await loadDataWithClientRequestSummary();home()};
+const loadDataWithClientRequestSummary=loadData;loadData=async function(){await loadDataWithClientRequestSummary()};
 home();
 
 /* Améliorations de l'espace administrateur : mot de passe et en-tête téléphone. */

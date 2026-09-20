@@ -36,6 +36,7 @@ assert.match(admin, /table:'clients'/);
 assert.match(admin, /table:'reservations'/);
 assert.match(admin, /table:'paiements'/);
 assert.match(admin, /table:'materiel'/);
+assert.doesNotMatch(admin, /loadData=async function\(\)\{await loadDataWithClientRequestSummary\(\);home\(\)\}/);
 assert.match(admin, /!\/\(annul\|refus\)\/i\.test\(status\(r\)\)/);
 assert.match(admin, /material\.quantite_disponible/);
 
