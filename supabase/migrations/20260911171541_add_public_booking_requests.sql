@@ -1,0 +1,5 @@
+-- Historical migration marker.
+-- This version was applied to the linked production project before migrations were
+-- added to source control. The production schema is the authoritative baseline;
+-- keeping this marker prevents migration-history drift without replaying secrets
+-- or mutating existing data.
