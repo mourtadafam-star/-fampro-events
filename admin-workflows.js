@@ -113,7 +113,7 @@ async function saveMissionDocument(){
 }
 window.addEventListener('beforeunload',e=>{if(missionEditor?.dirty){e.preventDefault();e.returnValue='';}});
 
-let paymentAttempt=null,reservationAttempt=null;
+let paymentAttempt=null,reservationAttempt=null,editingReservationId=null;
 const originalAddPayment=addPayment;
 addPayment=function(id){paymentAttempt=null;return originalAddPayment(id);};
 savePaymentModal=async function(){return workflowRun('payment',async()=>{
@@ -127,10 +127,41 @@ savePaymentModal=async function(){return workflowRun('payment',async()=>{
  paymentAttempt=null;closePaymentModal();const loaded=await loadData();
  alert(loaded?'Paiement enregistré.':'Paiement enregistré. Actualisez pour afficher le nouveau solde.');
 });};
+function prepareReservationForm(){
+ editingReservationId=null;reservationAttempt=null;
+ const title=document.querySelector('#newReservation .title'),button=document.querySelector('#newReservation .btn.full');
+ if(title)title.textContent='Nouvelle réservation';if(button)button.textContent='Enregistrer la réservation';
+ reservationClient.value=Array.from(reservationClient.options).some(option=>option.value==='new')?'new':reservationClient.options[0]?.value||'';fillClient();
+ eventType.selectedIndex=0;eventDate.value='';eventStatus.value='En attente';eventPlace.value='';eventTotal.value='';eventPaid.value='';eventPaid.disabled=false;eventChairs.value='0';eventMattresses.value='0';eventNotes.value='';
+ renderMaterialPicker();
+}
+const workflowBaseShow=show;
+show=function(id,...args){if(id==='newReservation')prepareReservationForm();return workflowBaseShow(id,...args);};
+
+function openReservationEditor(id){
+ const reservation=data.reservations.find(item=>String(item.id)===String(id));
+ if(!reservation||/(annul|refus)/i.test(status(reservation)))return alert('Cette réservation ne peut plus être modifiée.');
+ sourceClientRequest=null;show('newReservation');editingReservationId=id;
+ document.querySelector('#newReservation .title').textContent='Modifier la réservation';
+ document.querySelector('#newReservation .btn.full').textContent='Enregistrer les modifications';
+ reservationClient.value=String(reservation.client_id||'');fillClient();clientName.value=reservation.client_nom||name(reservation);eventType.value=reservation.type_evenement||'Autre';eventDate.value=reservation.date_evenement||'';eventStatus.value=reservation.statut||'En attente';eventPlace.value=reservation.lieu||'';eventTotal.value=Number(reservation.montant_total)||0;eventPaid.value=Number(reservation.montant_paye)||0;eventPaid.disabled=true;eventChairs.value=Number(reservation.chaises)||0;eventMattresses.value=Number(reservation.matelas)||0;eventNotes.value=reservation.notes||'';
+ renderMaterialPicker();
+ const grouped={};for(const item of reservedItems(reservation)){const key=String(item.id);grouped[key]=(grouped[key]||0)+(Number(item.quantite)||0)}
+ for(const [materialId,quantity] of Object.entries(grouped)){const input=document.querySelector(`[data-material-id="${CSS.escape(materialId)}"]`);if(!input)continue;input.max=String((Number(input.max)||0)+quantity);input.value=String(quantity)}
+ document.getElementById('newReservation').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 saveReservation=async function(){return workflowRun('reservation',async()=>{
  const payload={client_id:reservationClient.value,client_nom:clientName.value.trim(),telephone:clientPhone.value.trim(),adresse:clientAddress.value.trim(),type_evenement:eventType.value,date_evenement:eventDate.value,lieu:eventPlace.value.trim(),montant_total:Number(eventTotal.value),montant_paye:Number(eventPaid.value),statut:eventStatus.value,chaises:Number(eventChairs.value)||0,matelas:Number(eventMattresses.value)||0,notes:eventNotes.value.trim(),materiel_reserve:selectedReservationMaterials(),request_id:sourceClientRequest?.id||null,client_user_id:sourceClientRequest?.client_user_id||null};
  if(!payload.client_nom||!payload.date_evenement)throw new Error('Indiquez le client et la date.');
  if(!Number.isFinite(payload.montant_total)||!Number.isFinite(payload.montant_paye)||payload.montant_total<0||payload.montant_paye<0||payload.montant_paye>payload.montant_total)throw new Error('Vérifiez les montants de la réservation.');
+ if(editingReservationId){
+  const id=editingReservationId,current=data.reservations.find(item=>String(item.id)===String(id));
+  if(!current)throw new Error('Réservation introuvable.');
+  if(payload.montant_total<Number(current.montant_paye||0))throw new Error('Le total ne peut pas être inférieur au montant déjà payé.');
+  await workflowRpc('admin_update_reservation',{p_reservation:id,p_data:{client_id:payload.client_id,client_nom:payload.client_nom,type_evenement:payload.type_evenement,date_evenement:payload.date_evenement,lieu:payload.lieu,montant_total:payload.montant_total,statut:payload.statut,chaises:payload.chaises,matelas:payload.matelas,notes:payload.notes,materiel_reserve:payload.materiel_reserve}});
+  editingReservationId=null;eventPaid.disabled=false;await loadData();show('reservations');alert('Réservation modifiée. Le stock et la facture ont été actualisés.');return;
+ }
  const signature=JSON.stringify(payload);
  if(reservationAttempt&&reservationAttempt.signature!==signature)throw new Error('Vérifiez d’abord si la réservation précédente a été enregistrée.');
  reservationAttempt||={signature,id:crypto.randomUUID()};
@@ -142,11 +173,12 @@ cancelReservation=async function(id){if(!confirm('Annuler cette réservation ?')
  await workflowRpc('admin_cancel_reservation',{p_reservation:id});await loadData();alert('Réservation annulée.');
 });};
 deleteReservation=async function(id){if(!confirm('Supprimer définitivement cette réservation et ses paiements ? Cette action est irréversible.'))return;return workflowRun(`reservation-${id}`,async()=>{
- // Existing foreign key cascades payments in the same database transaction.
- const result=await supabaseClient.from('reservations').delete().eq('id',id).select('id');
- if(result.error)throw result.error;if(!result.data?.length)throw new Error('Réservation introuvable ou accès refusé.');
+ await workflowRpc('admin_delete_reservation',{p_reservation:id});
  await loadData();show('reservations');alert('Réservation et paiements supprimés définitivement.');
 });};
+
+const workflowOpenReservationDetail=openReservationDetail;
+openReservationDetail=function(id){workflowOpenReservationDetail(id);const reservation=data.reservations.find(item=>String(item.id)===String(id)),actions=document.querySelector('#reservationDetailContent .detail-contact.no-print');if(!reservation||!actions||/(annul|refus)/i.test(status(reservation))||actions.querySelector('[data-edit-reservation]'))return;const button=document.createElement('button');button.type='button';button.className='btn secondary';button.dataset.editReservation='';button.textContent='Modifier';button.onclick=()=>openReservationEditor(id);actions.insertBefore(button,actions.firstChild);};
 
 // Independent PDF instances: no automatic invoice stamp on other documents.
 function workflowPdf(title){
