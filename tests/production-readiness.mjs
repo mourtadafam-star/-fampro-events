@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, publicFunction, functionConfig] = await Promise.all([
+const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, publicFunction, assistantFunction, functionConfig] = await Promise.all([
   read('client.html'),
   read('index.html'),
   read('admin-workflows.js'),
@@ -12,6 +12,7 @@ const [client, admin, workflows, worker, login, migration, finishMigration, edit
   read('supabase/migrations/20260920112001_finish_production_hardening.sql'),
   read('supabase/migrations/20260920113450_add_reservation_edit_workflow.sql'),
   read('supabase/functions/submit-reservation-request/index.ts'),
+  read('supabase/functions/fampro-assistant/index.ts'),
   read('supabase/config.toml')
 ]);
 
@@ -47,7 +48,7 @@ assert.match(workflows, /workflowRpc\('admin_delete_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_update_reservation'/);
 assert.match(workflows, /function openReservationEditor/);
 
-assert.match(worker, /fampro-events-v117/);
+assert.match(worker, /fampro-events-v118/);
 assert.doesNotMatch(worker, /cdn\.jsdelivr\.net.*cache\.put/);
 assert.match(worker, /origin!==self\.location\.origin/);
 
@@ -68,6 +69,16 @@ assert.match(publicFunction, /hashRequestIdentity/);
 assert.match(publicFunction, /admin\.rpc\("submit_public_reservation_request"/);
 assert.match(publicFunction, /limited \? 429 : 400/);
 assert.match(functionConfig, /\[functions\.submit-reservation-request\][\s\S]*verify_jwt = false/);
+assert.match(functionConfig, /\[functions\.fampro-assistant\][\s\S]*verify_jwt = true/);
+assert.match(workflows, /supabaseClient\.functions\.invoke\('fampro-assistant'/);
+assert.match(workflows, /Toute future action sensible devra être présentée puis confirmée/);
+assert.match(assistantFunction, /supabase\.auth\.getUser\(token\)/);
+assert.match(assistantFunction, /user\.email\?\.toLowerCase\(\) !== ADMIN_EMAIL/);
+assert.match(assistantFunction, /Deno\.env\.get\("OPENAI_API_KEY"\)/);
+assert.match(assistantFunction, /store: false/);
+assert.match(assistantFunction, /strictement en lecture seule/);
+assert.doesNotMatch(assistantFunction, /SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEYS/);
+assert.doesNotMatch(assistantFunction, /\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.rpc\(/);
 assert.match(finishMigration, /revoke insert on public\.demandes_reservation from authenticated/);
 assert.match(finishMigration, /reservation_request_idempotency_request_idx/);
 assert.match(editMigration, /create or replace function public\.admin_update_reservation/);

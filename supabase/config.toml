@@ -2,3 +2,6 @@ project_id = "paegdthtusbwxuarhacb"
 
 [functions.submit-reservation-request]
 verify_jwt = false
+
+[functions.fampro-assistant]
+verify_jwt = true
