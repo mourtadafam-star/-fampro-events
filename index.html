@@ -515,5 +515,5 @@ const openInvoiceWithUnits=openInvoice;openInvoice=function(id){openInvoiceWithU
 renderMaterial();let liveRefreshTimer=null;const scheduleLiveRefresh=()=>{clearTimeout(liveRefreshTimer);liveRefreshTimer=setTimeout(()=>loadData(),350)};if(typeof supabaseClient.channel==='function')supabaseClient.channel('fampro-admin-live').on('postgres_changes',{event:'*',schema:'public',table:'clients'},scheduleLiveRefresh).on('postgres_changes',{event:'*',schema:'public',table:'reservations'},scheduleLiveRefresh).on('postgres_changes',{event:'*',schema:'public',table:'paiements'},scheduleLiveRefresh).on('postgres_changes',{event:'*',schema:'public',table:'materiel'},scheduleLiveRefresh).subscribe();
 
 </script>
-<script src="admin-workflows.js?v=105"></script>
+<script src="admin-workflows.js?v=106"></script>
 </body></html>

@@ -255,5 +255,50 @@ exportAdminReportPdf=function(){
  }catch(error){alert(error.message);}
 };
 reportPdfButton.onclick=exportAdminReportPdf;
+
+/* Assistant IA FAMpro : accès serveur authentifié et strictement en lecture seule. */
+const assistantStyles=document.createElement('style');
+assistantStyles.textContent=`.assistant-shell{display:grid;gap:12px}.assistant-notice{padding:12px;border:1px solid #f0d4d7;border-radius:12px;background:#fff7f8;color:#6d171d}.assistant-messages{display:grid;gap:10px;min-height:210px;max-height:56vh;overflow:auto;padding:4px}.assistant-message{max-width:88%;padding:11px 13px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45}.assistant-message.user{justify-self:end;background:var(--red);color:#fff;border-bottom-right-radius:4px}.assistant-message.assistant{justify-self:start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}.assistant-message.error{background:#fff1f1;color:#8b121b}.assistant-suggestions{display:flex;gap:7px;overflow:auto}.assistant-suggestions button{white-space:nowrap;border:1px solid var(--line);border-radius:20px;background:#fff;padding:8px 11px;color:var(--ink)}.assistant-form{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}.assistant-form textarea{width:100%;min-height:76px;max-height:180px;resize:vertical;border:1px solid var(--line);border-radius:11px;padding:11px;font:inherit}.assistant-form button{min-height:46px}.assistant-status{min-height:18px;margin:0}@media(max-width:560px){.assistant-form{grid-template-columns:1fr}.assistant-form .btn{width:100%}.assistant-message{max-width:94%}}`;
+document.head.append(assistantStyles);
+const assistantSection=document.createElement('section');
+assistantSection.id='assistant';assistantSection.className='hidden';
+assistantSection.innerHTML=`<div class="top"><h1 class="title">Assistant IA FAMpro</h1><span class="badge green">Lecture seule</span></div><div class="assistant-shell"><div class="assistant-notice"><b>Protection active</b><br><span class="small">L’assistant peut consulter les clients, le matériel, les disponibilités, les réservations et les paiements. Toute future action sensible devra être présentée puis confirmée par une personne avant exécution.</span></div><div class="assistant-suggestions" aria-label="Questions suggérées"><button type="button">Quelles sont les prochaines réservations ?</button><button type="button">Quels paiements restent à recevoir ?</button><button type="button">Quel matériel faut-il surveiller ?</button></div><div id="assistantMessages" class="assistant-messages" aria-live="polite"><div class="assistant-message assistant">Bonjour. Je peux analyser les données FAMpro actuellement accessibles, sans rien modifier.</div></div><form id="assistantForm" class="assistant-form"><label class="hidden" for="assistantQuestion">Votre question</label><textarea id="assistantQuestion" maxlength="1200" required placeholder="Ex. Quel matériel reste disponible samedi prochain ?"></textarea><button class="btn" type="submit">Demander</button></form><p id="assistantStatus" class="small assistant-status" role="status"></p></div>`;
+document.querySelector('main').append(assistantSection);
+for(const menu of [document.querySelector('.desktop-menu'),document.querySelector('.mobile-menu-list')]){
+ if(!menu)continue;
+ const button=document.createElement('button');button.type='button';button.dataset.page='assistant';button.textContent='✦  Assistant IA';
+ button.onclick=()=>{show('assistant');if(typeof closeMobileMenu==='function')closeMobileMenu();};
+ const before=menu.querySelector('[data-page="reports"], [onclick*="reports"]')||menu.querySelector('.menu-logout,.danger');
+ menu.insertBefore(button,before);
+}
+const assistantBaseRenderView=renderView;
+renderView=function(id){if(id==='assistant')return;return assistantBaseRenderView(id);};
+const assistantHistory=[];
+function appendAssistantMessage(role,content,error=false){
+ const element=document.createElement('div');element.className=`assistant-message ${role}${error?' error':''}`;element.textContent=content;
+ document.getElementById('assistantMessages').append(element);element.scrollIntoView({behavior:'smooth',block:'end'});
+}
+async function assistantErrorMessage(error){
+ try{const body=await error?.context?.json();if(body?.error)return body.error;}catch{}
+ const message=error?.message||'';
+ return /failed to send|edge function|fetch/i.test(message)?'Impossible de joindre l’Assistant IA pour le moment.':(message||'Impossible de joindre l’Assistant IA.');
+}
+async function askFamproAssistant(question){
+ const clean=question.trim();if(!clean)return;
+ const form=document.getElementById('assistantForm'),button=form.querySelector('button'),status=document.getElementById('assistantStatus');
+ appendAssistantMessage('user',clean);assistantHistory.push({role:'user',content:clean});
+ button.disabled=true;status.textContent='Analyse des données FAMpro…';
+ try{
+  const result=await supabaseClient.functions.invoke('fampro-assistant',{body:{messages:assistantHistory.slice(-8)}});
+  if(result.error)throw result.error;
+  if(!result.data?.answer)throw new Error('Réponse vide de l’Assistant IA.');
+  assistantHistory.push({role:'assistant',content:result.data.answer});appendAssistantMessage('assistant',result.data.answer);
+  const sources=result.data.sources||{};status.textContent=`Lecture seule · ${Number(sources.clients)||0} clients · ${Number(sources.reservations)||0} réservations · ${Number(sources.paiements)||0} paiements`;
+ }catch(error){appendAssistantMessage('assistant',await assistantErrorMessage(error),true);assistantHistory.pop();status.textContent='La demande n’a pas été traitée.';}
+ finally{button.disabled=false;document.getElementById('assistantQuestion').focus();}
+}
+document.getElementById('assistantForm').addEventListener('submit',event=>{event.preventDefault();const input=document.getElementById('assistantQuestion'),question=input.value;input.value='';askFamproAssistant(question);});
+assistantSection.querySelectorAll('.assistant-suggestions button').forEach(button=>button.onclick=()=>{document.getElementById('assistantQuestion').value=button.textContent;document.getElementById('assistantForm').requestSubmit();});
+
 // Boot once, only after every screen and handler has been registered.
 loadData();
