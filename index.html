@@ -315,24 +315,49 @@ materialPhotoUploadStyle.textContent=`
 `;
 document.head.append(materialPhotoUploadStyle);
 
-function materialPhotoPreview(inputId,previewId){
+function isMaterialPhoto(file){
+  return Boolean(file&&(String(file.type||'').startsWith('image/')||/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name||'')));
+}
+
+async function prepareMaterialPhoto(file){
+  if(!file)return null;
+  if(!isMaterialPhoto(file))throw new Error('Choisissez une photo depuis votre galerie ou votre appareil photo.');
+  if(file.size>20*1024*1024)throw new Error('La photo est trop volumineuse. Choisissez une image de moins de 20 Mo.');
+  if(['image/jpeg','image/png','image/webp'].includes(file.type)&&file.size<=4.5*1024*1024)return file;
+  const sourceUrl=URL.createObjectURL(file);
+  try{
+    const image=await new Promise((resolve,reject)=>{const element=new Image();element.onload=()=>resolve(element);element.onerror=()=>reject(new Error('Cette photo ne peut pas être lue sur ce téléphone.'));element.src=sourceUrl});
+    const maximum=1800,scale=Math.min(1,maximum/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+    canvas.getContext('2d',{alpha:false}).drawImage(image,0,0,canvas.width,canvas.height);
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.84));
+    if(!blob)throw new Error('La conversion de la photo a échoué.');
+    const base=(file.name||'photo').replace(/\.[^.]+$/,'').replace(/[^a-z0-9_-]+/gi,'-').slice(0,60)||'photo';
+    return new File([blob],`${base}.jpg`,{type:'image/jpeg',lastModified:Date.now()});
+  }finally{URL.revokeObjectURL(sourceUrl)}
+}
+
+async function materialPhotoPreview(inputId,previewId){
   const input=document.getElementById(inputId),preview=document.getElementById(previewId),file=input?.files?.[0];
   if(!preview)return;
   if(!file){preview.textContent='Aucune nouvelle photo sélectionnée.';return}
-  if(!['image/jpeg','image/png','image/webp'].includes(file.type)){input.value='';preview.textContent='Choisissez une image JPG, PNG ou WebP.';return}
-  if(file.size>5*1024*1024){input.value='';preview.textContent='La photo doit faire au maximum 5 Mo.';return}
-  const url=URL.createObjectURL(file);
-  preview.innerHTML=`<img src="${url}" alt="Aperçu de la photo"><span>${esc(file.name)}</span>`;
+  try{
+    if(!isMaterialPhoto(file))throw new Error('Choisissez une photo depuis votre galerie ou votre appareil photo.');
+    if(file.size>20*1024*1024)throw new Error('La photo est trop volumineuse. Choisissez une image de moins de 20 Mo.');
+    const url=URL.createObjectURL(file);
+    preview.innerHTML=`<img src="${url}" alt="Aperçu de la photo"><span>${esc(file.name)}<br>La photo sera optimisée automatiquement.</span>`;
+    preview.querySelector('img').addEventListener('load',()=>URL.revokeObjectURL(url),{once:true});
+  }catch(error){input.value='';preview.textContent=error.message||'Cette photo ne peut pas être utilisée.'}
 }
 
 async function uploadMaterialPhoto(file){
   if(!file)return null;
-  if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw new Error('Choisissez une image JPG, PNG ou WebP.');
-  if(file.size>5*1024*1024)throw new Error('La photo doit faire au maximum 5 Mo.');
-  const extension=(file.name.split('.').pop()||'jpg').toLowerCase();
+  const prepared=await prepareMaterialPhoto(file);
+  if(prepared.size>5*1024*1024)throw new Error('La photo reste trop volumineuse après optimisation. Choisissez une photo plus petite.');
+  const extension=(prepared.name.split('.').pop()||'jpg').toLowerCase();
   const unique=crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const path=`${unique}.${extension}`;
-  const uploaded=await supabaseClient.storage.from('materiel-images').upload(path,file,{cacheControl:'31536000',contentType:file.type,upsert:false});
+  const uploaded=await supabaseClient.storage.from('materiel-images').upload(path,prepared,{cacheControl:'31536000',contentType:prepared.type||'image/jpeg',upsert:false});
   if(uploaded.error)throw uploaded.error;
   const publicUrl=supabaseClient.storage.from('materiel-images').getPublicUrl(uploaded.data.path);
   return publicUrl.data.publicUrl;
@@ -343,7 +368,7 @@ const renderMaterialWithFileUpload=renderMaterial;renderMaterial=function(){
   const oldPicker=document.getElementById('stockPhoto');
   if(oldPicker){
     const field=oldPicker.parentElement;
-    field.innerHTML=`<label class="photo-select-label" for="stockPhotoFile">Photo du matériel</label><input id="stockPhotoFile" class="material-file-input" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onchange="materialPhotoPreview('stockPhotoFile','stockPhotoPreview')"><span class="material-upload-help">Choisissez une image dans la galerie ou prenez une photo. JPG, PNG ou WebP · 5 Mo maximum.</span><div id="stockPhotoPreview" class="material-photo-preview">Aucune photo sélectionnée.</div>`;
+    field.innerHTML=`<label class="photo-select-label" for="stockPhotoFile">Photo du matériel</label><input id="stockPhotoFile" class="material-file-input" type="file" accept="image/*,.heic,.heif" onchange="materialPhotoPreview('stockPhotoFile','stockPhotoPreview')"><span class="material-upload-help">Touchez ici pour ouvrir la galerie ou prendre une photo. Les photos iPhone HEIC sont converties automatiquement · 20 Mo maximum avant optimisation.</span><div id="stockPhotoPreview" class="material-photo-preview">Aucune photo sélectionnée.</div>`;
   }
 };
 
@@ -351,7 +376,7 @@ const editMaterialWithFileUpload=editMaterial;editMaterial=function(id){
   editMaterialWithFileUpload(id);
   const picker=document.getElementById('editMaterialPhoto');
   if(!picker||document.getElementById('editMaterialPhotoFile'))return;
-  picker.insertAdjacentHTML('afterend',`<label class="photo-select-label" for="editMaterialPhotoFile" style="margin-top:12px">Remplacer par une photo de votre appareil</label><input id="editMaterialPhotoFile" class="material-file-input" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onchange="materialPhotoPreview('editMaterialPhotoFile','editMaterialPhotoPreview')"><div id="editMaterialPhotoPreview" class="material-photo-preview">Conservez la photo actuelle ou choisissez-en une nouvelle.</div>`);
+  picker.insertAdjacentHTML('afterend',`<label class="photo-select-label" for="editMaterialPhotoFile" style="margin-top:12px">Remplacer par une photo de votre téléphone</label><input id="editMaterialPhotoFile" class="material-file-input" type="file" accept="image/*,.heic,.heif" onchange="materialPhotoPreview('editMaterialPhotoFile','editMaterialPhotoPreview')"><span class="material-upload-help">Ouvre la galerie ou l’appareil photo. Les photos HEIC sont converties automatiquement.</span><div id="editMaterialPhotoPreview" class="material-photo-preview">Conservez la photo actuelle ou choisissez-en une nouvelle.</div>`);
 };
 
 addMaterial=async function(){
