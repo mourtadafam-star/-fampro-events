@@ -97,7 +97,7 @@ assert.match(editMigration, /update public\.factures set montant_total = new_amo
 assert.match(staffBaseMigration, /create table if not exists public\.staff_accounts/);
 assert.match(staffBaseMigration, /create or replace function private\.staff_can\(permission_name text\)/);
 assert.match(staffBaseMigration, /from auth\.users[\s\S]*where lower\(email\) = 'mourtadafam@gmail\.com'/);
-assert.doesNotMatch(staffBaseMigration, /f47b9a7e-ab87-44ea-930a-b624e1f0982b/);
+assert.doesNotMatch(staffBaseMigration, /values\s*\(\s*'[0-9a-f]{8}-[0-9a-f-]{27,}'/i);
 assert.match(auditMigration, /alter table public\.staff_activity enable row level security/);
 assert.match(auditMigration, /revoke all on function private\.log_staff_activity\(\) from public, anon, authenticated/);
 assert.match(staffMigration, /create or replace function private\.staff_is_admin\(\)/);
