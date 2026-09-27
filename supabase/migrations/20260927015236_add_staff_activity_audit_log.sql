@@ -1,3 +1,97 @@
+create schema if not exists private;
+revoke all on schema private from public, anon;
+
+create table if not exists public.staff_accounts (
+  id uuid primary key default gen_random_uuid(),
+  auth_user_id uuid not null unique references auth.users(id) on delete restrict,
+  email text not null,
+  nom text not null,
+  telephone text,
+  role text not null default 'employee' check (role in ('admin','employee')),
+  active boolean not null default true,
+  permissions jsonb not null default '{}'::jsonb check (jsonb_typeof(permissions) = 'object'),
+  invited_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists staff_accounts_email_lower_key
+  on public.staff_accounts (lower(email));
+
+alter table public.staff_accounts enable row level security;
+revoke all on table public.staff_accounts from anon, authenticated;
+grant select on table public.staff_accounts to authenticated;
+
+create or replace function private.staff_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select exists (
+    select 1
+    from public.staff_accounts account
+    where account.auth_user_id = (select auth.uid())
+      and account.active = true
+      and account.role = 'admin'
+  )
+$function$;
+
+create or replace function private.staff_can(requested_permission text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select exists (
+    select 1
+    from public.staff_accounts account
+    where account.auth_user_id = (select auth.uid())
+      and account.active = true
+      and (
+        account.role = 'admin'
+        or coalesce(account.permissions -> requested_permission, 'false'::jsonb) = 'true'::jsonb
+      )
+  )
+$function$;
+
+revoke all on function private.staff_is_admin() from public, anon;
+revoke all on function private.staff_can(text) from public, anon;
+grant usage on schema private to authenticated;
+grant execute on function private.staff_is_admin() to authenticated;
+grant execute on function private.staff_can(text) to authenticated;
+
+drop policy if exists "Staff reads own account or admins read all" on public.staff_accounts;
+create policy "Staff reads own account or admins read all"
+on public.staff_accounts for select to authenticated
+using (
+  auth_user_id = (select auth.uid())
+  or (select private.staff_is_admin())
+);
+
+insert into public.staff_accounts (
+  auth_user_id, email, nom, role, active, permissions
+)
+select
+  id,
+  email,
+  coalesce(nullif(raw_user_meta_data ->> 'nom', ''), email),
+  'admin',
+  true,
+  jsonb_build_object(
+    'reservations', true,
+    'clients', true,
+    'stock', true,
+    'paiements', true,
+    'rapports', true
+  )
+from auth.users
+where lower(email) = 'mourtadafam@gmail.com'
+on conflict (auth_user_id) do update
+set role = 'admin', active = true, updated_at = now();
+
 create table if not exists public.staff_activity (
   id uuid primary key default gen_random_uuid(),
   actor_user_id uuid not null references auth.users(id) on delete restrict,
@@ -30,7 +124,7 @@ grant select on table public.staff_activity to authenticated;
 drop policy if exists "Admins read staff activity" on public.staff_activity;
 create policy "Admins read staff activity"
 on public.staff_activity for select to authenticated
-using ((select private.staff_can('staff')));
+using ((select private.staff_is_admin()));
 
 create or replace function private.log_staff_activity()
 returns trigger
@@ -59,8 +153,12 @@ begin
     return case when tg_op = 'DELETE' then old else new end;
   end if;
 
-  before_data := case when tg_op in ('UPDATE','DELETE') then to_jsonb(old) else null end;
-  after_data := case when tg_op in ('INSERT','UPDATE') then to_jsonb(new) else null end;
+  before_data := case when tg_op in ('UPDATE','DELETE') then
+    to_jsonb(old) - array['auth_user_id','client_user_id','email','telephone','adresse','latitude','longitude','message']
+    else null end;
+  after_data := case when tg_op in ('INSERT','UPDATE') then
+    to_jsonb(new) - array['auth_user_id','client_user_id','email','telephone','adresse','latitude','longitude','message']
+    else null end;
   record_id := coalesce(after_data->>'id', before_data->>'id', after_data->>'reservation_id', before_data->>'reservation_id', 'sans-identifiant');
   label := case tg_table_name
     when 'clients' then 'Client'
