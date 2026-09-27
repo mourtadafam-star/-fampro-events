@@ -562,6 +562,68 @@ async function toggleStaffAccount(id,active){if(!confirm(active?'Réactiver ce c
 const showWithStaff=show;show=function(id,b,direction='forward'){showWithStaff(id,b,direction);if(id==='staff')loadStaffAccounts()};
 initializeStaffModule();
 
+/* Communication client : WhatsApp, facture PDF et devis PDF. */
+const customerCommunicationStyle=document.createElement('style');
+customerCommunicationStyle.textContent='.customer-document-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px!important}.customer-document-actions .btn{width:100%;min-height:42px}.customer-whatsapp{background:#158b52!important;border-color:#158b52!important;color:#fff!important}@media(max-width:520px){.customer-document-actions{grid-template-columns:1fr!important}}';
+document.head.append(customerCommunicationStyle);
+
+function reservationClient(reservation){return data.clients.find(item=>String(item.id)===String(reservation?.client_id))||data.clients.find(item=>String(item.nom||'').trim().toLowerCase()===String(reservation?.client_nom||'').trim().toLowerCase())||{}}
+function whatsappPhone(value){let digits=String(value||'').replace(/\D/g,'');if(digits.startsWith('00221'))digits=digits.slice(2);if(digits.startsWith('0')&&digits.length===10)digits=digits.slice(1);if(digits.length===9)digits=`221${digits}`;return digits}
+function customerWhatsAppUrl(reservation,message){const client=reservationClient(reservation),phone=whatsappPhone(client.telephone||reservation?.client_telephone||reservation?.telephone);return phone?`https://wa.me/${phone}?text=${encodeURIComponent(message)}`:''}
+function customerMessage(reservation,kind='chat'){
+  const client=reservationClient(reservation),clientName=client.nom||reservation?.client_nom||name(reservation),event=reservation?.type_evenement||'votre événement',date=reservation?.date_evenement?new Date(`${reservation.date_evenement}T12:00:00`).toLocaleDateString('fr-FR'):'la date prévue';
+  if(kind==='invoice')return `Bonjour ${clientName}, voici votre facture FAMpro Events pour ${event} du ${date}. Le document PDF est joint à ce message. Merci.`;
+  if(kind==='quote')return `Bonjour ${clientName}, voici votre devis FAMpro Events pour ${event} du ${date}. Le document PDF est joint à ce message. Nous restons disponibles pour toute question.`;
+  return `Bonjour ${clientName}, FAMpro Events vous contacte au sujet de votre réservation ${event} prévue le ${date}.`;
+}
+function discussWithClient(id){const reservation=data.reservations.find(item=>String(item.id)===String(id))||currentReservation;if(!reservation)return;const url=customerWhatsAppUrl(reservation,customerMessage(reservation));if(!url)return alert('Le numéro WhatsApp du client n’est pas renseigné.');window.open(url,'_blank','noopener')}
+
+async function createBrandedQuotePdf(){
+  if(!currentReservation)return null;
+  const jsPDF=BaseFAMproPdf;if(!jsPDF){alert('Le générateur PDF est indisponible.');return null}
+  const r=currentReservation,client=reservationClient(r),pdf=new jsPDF({unit:'mm',format:'a4'}),safe=value=>invoicePdfText(String(value??'')),items=invoiceMaterialItems(r),quoteNumber=`DEV-${new Date().getFullYear()}-${String(r.id||'000000').replace(/-/g,'').slice(-6).toUpperCase()}`;
+  const rawText=pdf.text.bind(pdf);pdf.text=(value,...args)=>rawText(Array.isArray(value)?value.map(safe):safe(value),...args);
+  const formatDate=value=>value?new Date(`${value}T12:00:00`).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}):'À confirmer';
+  const header=()=>{pdf.setFillColor(179,7,18);pdf.rect(0,0,210,42,'F');pdf.setFillColor(255,255,255);pdf.roundedRect(18,8,27,25,2,2,'F');if(invoiceLogo.complete&&invoiceLogo.naturalWidth){try{pdf.addImage(invoiceLogo,'PNG',21,10,21,21)}catch{}}pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(16);pdf.text('FAMpro Events',51,17);pdf.setFont('helvetica','normal');pdf.setFontSize(6.8);pdf.text('Location de matériel événementiel',51,23);pdf.text('mourtadafam@gmail.com  ·  +221 77 287 52 52',51,28);pdf.setFont('helvetica','bold');pdf.setFontSize(6.2);pdf.text('Nous créons, vous célébrez.',51,34);pdf.setFontSize(15);pdf.text('DEVIS',192,16,{align:'right'});pdf.setFont('helvetica','normal');pdf.setFontSize(7.2);pdf.text(quoteNumber,192,23,{align:'right'});pdf.text(`Émis le ${formatDate(new Date().toISOString().slice(0,10))}`,192,29,{align:'right'})};
+  header();let y=53;
+  const infoBlocks=[['CLIENT',[client.nom||r.client_nom||name(r),client.telephone||r.client_telephone||r.telephone||'Téléphone non renseigné',client.adresse||r.client_adresse||'']],['ÉVÉNEMENT',[r.type_evenement||'Événement',formatDate(r.date_evenement),r.lieu||'Lieu à confirmer']]];
+  infoBlocks.forEach(([title,values],index)=>{const x=index?109:18;pdf.setFillColor(252,250,250);pdf.setDrawColor(225,220,221);pdf.roundedRect(x,y,83,35,3,3,'FD');pdf.setTextColor(179,7,18);pdf.setFont('helvetica','bold');pdf.setFontSize(8);pdf.text(title,x+5,y+7);pdf.setTextColor(34,35,39);pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);let lineY=y+15;values.filter(Boolean).forEach(value=>{const lines=pdf.splitTextToSize(safe(value),72);pdf.text(lines,x+5,lineY);lineY+=lines.length*4.2})});
+  y+=45;pdf.setTextColor(34,35,39);pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Matériel prévu',18,y);y+=8;
+  if(items.length){items.forEach((item,index)=>{if(y>235){pdf.addPage();header();y=54}pdf.setFillColor(index%2?252:255,250,250);pdf.rect(18,y-5,174,10,'F');pdf.setTextColor(34,35,39);pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.text(safe(item.nom),22,y);pdf.setTextColor(179,7,18);pdf.setFont('helvetica','bold');pdf.text(materialQuantity(item.quantite,item),188,y,{align:'right'});y+=11})}else{pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.text('Matériel à confirmer avec le client.',18,y);y+=12}
+  if(y>218){pdf.addPage();header();y=54}pdf.setDrawColor(225,220,221);pdf.line(18,y,192,y);y+=12;pdf.setTextColor(88,92,99);pdf.setFont('helvetica','normal');pdf.setFontSize(9);pdf.text('Montant estimé',18,y);pdf.setTextColor(179,7,18);pdf.setFont('helvetica','bold');pdf.setFontSize(14);pdf.text(`${fmt(total(r))} FCFA`,192,y,{align:'right'});y+=15;pdf.setFillColor(255,248,237);pdf.setDrawColor(238,190,92);pdf.roundedRect(18,y,174,28,3,3,'FD');pdf.setTextColor(127,79,0);pdf.setFontSize(7.5);pdf.text('Conditions du devis',23,y+8);pdf.setTextColor(70,70,70);pdf.setFont('helvetica','normal');pdf.setFontSize(6.8);pdf.text('- Devis valable 15 jours à compter de sa date d’émission.',23,y+15);pdf.text('- La date est réservée après confirmation et versement de l’acompte convenu.',23,y+21);pdf.setDrawColor(225,220,221);pdf.line(18,275,192,275);pdf.setTextColor(108,12,20);pdf.setFontSize(6.2);pdf.text('FAMpro Events · 77 287 52 52 · mourtadafam@gmail.com',18,282);pdf.text('Nous créons, vous célébrez.',192,282,{align:'right'});
+  const fileName=`FAMpro-Devis-${quoteNumber}.pdf`;return {pdf,fileName,file:new File([pdf.output('blob')],fileName,{type:'application/pdf'}),quoteNumber}
+}
+function downloadCustomerPdf(result){const url=URL.createObjectURL(result.file),link=document.createElement('a');link.href=url;link.download=result.fileName;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+async function shareCustomerDocument(kind='invoice',sendToWhatsApp=false){
+  if(!currentReservation)return alert('Choisissez d’abord une réservation.');
+  try{
+    const result=kind==='quote'?await createBrandedQuotePdf():await createBrandedInvoicePdf();if(!result)return;
+    const title=kind==='quote'?'Devis FAMpro Events':'Facture FAMpro Events',message=customerMessage(currentReservation,kind);
+    if(navigator.canShare?.({files:[result.file]})){try{await navigator.share({title,text:message,files:[result.file]});return}catch(error){if(error.name==='AbortError')return}}
+    downloadCustomerPdf(result);
+    if(sendToWhatsApp){const url=customerWhatsAppUrl(currentReservation,`${message}\n\nLe PDF vient d’être téléchargé sur cet appareil. Ajoutez-le à cette discussion avant d’envoyer.`);if(url){window.open(url,'_blank','noopener');return}}
+    alert(`${title} téléchargé. Vous pouvez maintenant le joindre dans WhatsApp, e-mail ou une autre application.`);
+  }catch(error){alert(`Impossible de préparer le document : ${error.message||error}`)}
+}
+async function sendInvoiceToWhatsApp(){await shareCustomerDocument('invoice',true)}
+async function sendQuoteToWhatsApp(){await shareCustomerDocument('quote',true)}
+shareInvoice=()=>shareCustomerDocument('invoice');
+shareBrandedInvoice=()=>shareCustomerDocument('invoice');
+
+invoiceActions.classList.add('customer-document-actions');invoiceActions.style.display='grid';
+invoiceButtons[0].textContent='Imprimer la facture';invoiceButtons[0].onclick=printBrandedInvoice;
+invoiceButtons[1].textContent='Partager la facture';invoiceButtons[1].onclick=()=>shareCustomerDocument('invoice');
+const invoiceWhatsAppButton=document.createElement('button');invoiceWhatsAppButton.type='button';invoiceWhatsAppButton.className='btn customer-whatsapp';invoiceWhatsAppButton.textContent='Facture sur WhatsApp';invoiceWhatsAppButton.onclick=sendInvoiceToWhatsApp;invoiceActions.append(invoiceWhatsAppButton);
+const quoteWhatsAppButton=document.createElement('button');quoteWhatsAppButton.type='button';quoteWhatsAppButton.className='btn secondary';quoteWhatsAppButton.textContent='Créer et partager le devis';quoteWhatsAppButton.onclick=sendQuoteToWhatsApp;invoiceActions.append(quoteWhatsAppButton);
+
+const openReservationDetailWithCommunication=openReservationDetail;openReservationDetail=function(id){
+  openReservationDetailWithCommunication(id);const reservation=data.reservations.find(item=>String(item.id)===String(id)),actions=reservationDetailContent.querySelector('.detail-contact.no-print');if(!reservation||!actions)return;
+  actions.classList.add('customer-document-actions');const existingWhatsApp=reservationDetailContent.querySelector('a[href*="wa.me"]');if(existingWhatsApp){existingWhatsApp.href=customerWhatsAppUrl(reservation,customerMessage(reservation));existingWhatsApp.textContent='Discuter sur WhatsApp'}
+  const chat=document.createElement('button');chat.type='button';chat.className='btn customer-whatsapp';chat.textContent='Discuter';chat.onclick=()=>discussWithClient(id);actions.prepend(chat);
+  const quote=document.createElement('button');quote.type='button';quote.className='btn secondary';quote.textContent='Devis PDF';quote.onclick=()=>{currentReservation=reservation;sendQuoteToWhatsApp()};actions.insertBefore(quote,actions.querySelector('.btn.secondary'));
+};
+const openClientDetailWithCommunication=openClientDetail;openClientDetail=function(id){openClientDetailWithCommunication(id);const client=data.clients.find(item=>String(item.id)===String(id)),link=clientDetailContent.querySelector('a[href*="wa.me"]');if(!client||!link)return;const phone=whatsappPhone(client.telephone);if(!phone)return;link.href=`https://wa.me/${phone}?text=${encodeURIComponent(`Bonjour ${client.nom||'Client'}, FAMpro Events est à votre écoute. Comment pouvons-nous vous aider ?`)}`;link.textContent='Discuter sur WhatsApp'};
+
 </script>
 <script src="admin-workflows.js?v=105"></script>
 </body></html>
