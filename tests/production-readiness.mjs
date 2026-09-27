@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, publicFunction, functionConfig] = await Promise.all([
+const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, auditMigration, publicFunction, functionConfig] = await Promise.all([
   read('client.html'),
   read('index.html'),
   read('admin-workflows.js'),
@@ -11,6 +11,7 @@ const [client, admin, workflows, worker, login, migration, finishMigration, edit
   read('supabase/migrations/20260919234335_production_readiness_hardening.sql'),
   read('supabase/migrations/20260920112001_finish_production_hardening.sql'),
   read('supabase/migrations/20260920113450_add_reservation_edit_workflow.sql'),
+  read('supabase/migrations/20260927015236_add_staff_activity_audit_log.sql'),
   read('supabase/functions/submit-reservation-request/index.ts'),
   read('supabase/config.toml')
 ]);
@@ -24,8 +25,8 @@ assert.match(client, /client\.functions\.invoke\('submit-reservation-request'/);
 assert.doesNotMatch(client, /client\.from\('demandes_reservation'\)\.insert/);
 assert.match(client, /publicRequestAttempt\|\|=crypto\.randomUUID\(\)/);
 assert.match(client, /À LA UNE/);
-assert.match(client, /href="#reserver">Demander un devis<\/a>/);
-assert.match(client, /@media\(max-width:700px\)\{\.publicite\{margin-top:24px\}\.publicite-card\{display:block/);
+assert.match(client, /href="#reserver">Faire une réservation<\/a>/);
+assert.match(client, /@media\(max-width:700px\)\{\.publicite\{margin-top:24px\}\.publicite-card\{grid-template-columns:86px 1fr/);
 
 for (const page of [client, admin, login]) {
   assert.match(page, /@supabase\/supabase-js@2\.116\.0\/dist\/umd\/supabase\.min\.js/);
@@ -47,7 +48,7 @@ assert.match(workflows, /workflowRpc\('admin_delete_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_update_reservation'/);
 assert.match(workflows, /function openReservationEditor/);
 
-assert.match(worker, /fampro-events-v117/);
+assert.match(worker, /fampro-events-v134/);
 assert.doesNotMatch(worker, /cdn\.jsdelivr\.net.*cache\.put/);
 assert.match(worker, /origin!==self\.location\.origin/);
 
@@ -73,6 +74,11 @@ assert.match(finishMigration, /reservation_request_idempotency_request_idx/);
 assert.match(editMigration, /create or replace function public\.admin_update_reservation/);
 assert.match(editMigration, /reservation\.id <> p_reservation/);
 assert.match(editMigration, /update public\.factures set montant_total = new_amount/);
+assert.match(auditMigration, /alter table public\.staff_activity enable row level security/);
+assert.match(auditMigration, /private\.staff_can\('staff'\)/);
+assert.match(auditMigration, /revoke all on function private\.log_staff_activity\(\) from public, anon, authenticated/);
+assert.match(admin, /async function buildCompleteBackup/);
+assert.match(admin, /backupTables=\['clients','reservations','paiements','materiel'/);
 
 // Fake-data scenarios mirror the database capacity rule without touching live data.
 const active = status => !/(annul|refus)/i.test(status || '');
