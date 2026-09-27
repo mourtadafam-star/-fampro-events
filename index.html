@@ -357,7 +357,7 @@ async function uploadMaterialPhoto(file){
   const extension=(prepared.name.split('.').pop()||'jpg').toLowerCase();
   const unique=crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const path=`${unique}.${extension}`;
-  const uploaded=await supabaseClient.storage.from('materiel-images').upload(path,prepared,{cacheControl:'31536000',contentType:prepared.type||'image/jpeg',upsert:false});
+  const uploaded=await supabaseClient.storage.from('materiel-images').upload(path,prepared,{cacheControl:'60',contentType:prepared.type||'image/jpeg',upsert:false});
   if(uploaded.error)throw uploaded.error;
   const publicUrl=supabaseClient.storage.from('materiel-images').getPublicUrl(uploaded.data.path);
   return publicUrl.data.publicUrl;
@@ -657,4 +657,5 @@ const homeWithBackupReminder=home;home=function(){homeWithBackupReminder();docum
 
 </script>
 <script src="admin-workflows.js?v=105"></script>
+<script src="admin-freshness.js?v=136"></script>
 </body></html>

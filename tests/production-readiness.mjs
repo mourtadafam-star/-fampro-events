@@ -48,7 +48,9 @@ assert.match(workflows, /workflowRpc\('admin_delete_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_update_reservation'/);
 assert.match(workflows, /function openReservationEditor/);
 
-assert.match(worker, /fampro-events-v135/);
+assert.match(worker, /fampro-events-v136/);
+assert.match(client, /client-catalog-sync\.js\?v=136/);
+assert.match(admin, /admin-freshness\.js\?v=136/);
 assert.doesNotMatch(worker, /cdn\.jsdelivr\.net.*cache\.put/);
 assert.match(worker, /origin!==self\.location\.origin/);
 

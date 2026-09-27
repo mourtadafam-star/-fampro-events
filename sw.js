@@ -1,5 +1,5 @@
-const CACHE='fampro-events-v135';
-const ASSETS=['./','./index.html','./admin-workflows.js?v=105','./login.html','./client.html','./manifest.webmanifest','./client.webmanifest','./092508DF-3780-43EC-8976-384F9EF65BE0.png','./table-doree.png'];
+const CACHE='fampro-events-v136';
+const ASSETS=['./','./index.html','./admin-workflows.js?v=105','./admin-freshness.js?v=136','./login.html','./client.html','./client-catalog-sync.js?v=136','./manifest.webmanifest','./client.webmanifest','./092508DF-3780-43EC-8976-384F9EF65BE0.png','./table-doree.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('fampro-events-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
@@ -14,6 +14,13 @@ self.addEventListener('fetch',event=>{
     return;
   }
   if(new URL(event.request.url).origin!==self.location.origin)return;
+  if(event.request.destination==='image'){
+    event.respondWith(fetch(event.request,{cache:'no-store'}).then(response=>{
+      if(response.ok)caches.open(CACHE).then(cache=>cache.put(event.request,response.clone()));
+      return response;
+    }).catch(()=>caches.match(event.request,{ignoreSearch:true})));
+    return;
+  }
   event.respondWith(caches.match(event.request).then(hit=>{
     if(hit)return hit;
     return fetch(event.request).then(response=>{
