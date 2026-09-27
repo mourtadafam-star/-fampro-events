@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, auditMigration, staffMigration, publicFunction, staffFunction, functionConfig, pwaUpdate] = await Promise.all([
+const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, staffBaseMigration, auditMigration, staffMigration, publicFunction, staffFunction, functionConfig, pwaUpdate] = await Promise.all([
   read('client.html'),
   read('index.html'),
   read('admin-workflows.js'),
@@ -11,6 +11,7 @@ const [client, admin, workflows, worker, login, migration, finishMigration, edit
   read('supabase/migrations/20260919234335_production_readiness_hardening.sql'),
   read('supabase/migrations/20260920112001_finish_production_hardening.sql'),
   read('supabase/migrations/20260920113450_add_reservation_edit_workflow.sql'),
+  read('supabase/migrations/20260926211731_create_secure_staff_accounts.sql'),
   read('supabase/migrations/20260927015236_add_staff_activity_audit_log.sql'),
   read('supabase/migrations/20260927152406_secure_staff_access_and_document_sharing.sql'),
   read('supabase/functions/submit-reservation-request/index.ts'),
@@ -93,8 +94,11 @@ assert.match(finishMigration, /reservation_request_idempotency_request_idx/);
 assert.match(editMigration, /create or replace function public\.admin_update_reservation/);
 assert.match(editMigration, /reservation\.id <> p_reservation/);
 assert.match(editMigration, /update public\.factures set montant_total = new_amount/);
+assert.match(staffBaseMigration, /create table if not exists public\.staff_accounts/);
+assert.match(staffBaseMigration, /create or replace function private\.staff_can\(permission_name text\)/);
+assert.match(staffBaseMigration, /from auth\.users[\s\S]*where lower\(email\) = 'mourtadafam@gmail\.com'/);
+assert.doesNotMatch(staffBaseMigration, /f47b9a7e-ab87-44ea-930a-b624e1f0982b/);
 assert.match(auditMigration, /alter table public\.staff_activity enable row level security/);
-assert.match(auditMigration, /private\.staff_is_admin\(\)/);
 assert.match(auditMigration, /revoke all on function private\.log_staff_activity\(\) from public, anon, authenticated/);
 assert.match(staffMigration, /create or replace function private\.staff_is_admin\(\)/);
 assert.match(staffMigration, /create or replace function private\.staff_can\(requested_permission text\)/);

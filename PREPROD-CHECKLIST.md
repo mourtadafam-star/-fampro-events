@@ -11,6 +11,7 @@ Ne pas tester ces changements pour la première fois sur les données réelles. 
 3. Exécuter `supabase test db` et exiger 17 tests réussis dans `supabase/tests/staff_access_test.sql`.
 4. Créer quatre comptes : administrateur, employé Réservations, employé Paiements et client.
 5. Avec chaque compte, tenter aussi des accès directs via l’API Supabase, sans passer par l’interface.
+6. Relancer les conseillers de sécurité Supabase et activer la protection contre les mots de passe compromis dans Auth.
 
 Critères obligatoires :
 
@@ -20,6 +21,8 @@ Critères obligatoires :
 - un employé désactivé perd immédiatement l’accès aux données lors de la requête suivante ;
 - chaque permission refusée par l’interface est aussi refusée par les règles de la base ;
 - les six opérations atomiques de réservation, mission et paiement acceptent seulement la permission prévue.
+
+Les avertissements existants sur `pg_net` et `get_material_availability` doivent être examinés séparément : ne pas déplacer l’extension sans vérifier les tâches planifiées, et confirmer que l’exposition publique de la disponibilité agrégée du matériel reste un choix métier accepté.
 
 ### 2. Invitation et désactivation d’un employé
 
