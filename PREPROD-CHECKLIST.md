@@ -45,6 +45,8 @@ Critères obligatoires : aucune adresse, téléphone, e-mail client, position, m
 
 Tester sur Android/Chrome et iPhone/Safari avec : `77 287 52 52`, `0772875252`, `+221 77 287 52 52`, `00221 77 287 52 52` et `+221 (0) 77 287 52 52`.
 
+État au 28 septembre 2026 : génération et partage d’une facture et d’un devis confirmés par l’utilisateur avec le destinataire de test `221772875252`. La matrice complète Android/iPhone et les formats invalides reste à exécuter avant la mise en production.
+
 Critères obligatoires :
 
 - tous ces formats ouvrent le destinataire `221772875252` ;
