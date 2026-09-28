@@ -71,6 +71,8 @@ Critère obligatoire : masquer un menu ne suffit pas ; chaque opération interdi
 3. Revenir sur l’onglet déjà ouvert, puis contrôler les trois pages : gestion, client et connexion.
 4. Refaire un passage hors ligne après un premier chargement complet.
 
+État au 28 septembre 2026 : test automatisé réussi sur la page de connexion de la prévisualisation. Un cache `fampro-events-v136` simulé a été supprimé après réinstallation du service worker ; seul `fampro-events-v137` est resté, `pwa-update.js?v=137` a été chargé et aucune erreur ni boucle de rechargement n’a été observée. Le contrôle sur Android et iPhone reste obligatoire.
+
 Critères obligatoires : l’ancien cache est supprimé, la page contrôlée se recharge une seule fois lors du changement de service worker, les nouveaux scripts `customer-sharing.js` et `pwa-update.js` sont chargés, et aucun cycle de rechargement n’apparaît.
 
 ### 7. Régression générale
