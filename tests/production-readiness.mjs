@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, auditMigration, publicFunction, functionConfig] = await Promise.all([
+const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, staffBaseMigration, auditMigration, staffMigration, publicFunction, staffFunction, functionConfig, pwaUpdate] = await Promise.all([
   read('client.html'),
   read('index.html'),
   read('admin-workflows.js'),
@@ -11,16 +11,20 @@ const [client, admin, workflows, worker, login, migration, finishMigration, edit
   read('supabase/migrations/20260919234335_production_readiness_hardening.sql'),
   read('supabase/migrations/20260920112001_finish_production_hardening.sql'),
   read('supabase/migrations/20260920113450_add_reservation_edit_workflow.sql'),
+  read('supabase/migrations/20260926211731_create_secure_staff_accounts.sql'),
   read('supabase/migrations/20260927015236_add_staff_activity_audit_log.sql'),
+  read('supabase/migrations/20260927152406_secure_staff_access_and_document_sharing.sql'),
   read('supabase/functions/submit-reservation-request/index.ts'),
-  read('supabase/config.toml')
+  read('supabase/functions/manage-employee/index.ts'),
+  read('supabase/config.toml'),
+  read('pwa-update.js')
 ]);
 
 assert.match(client, /client\.rpc\('get_material_availability'/);
 assert.doesNotMatch(client, /dateAvailabilityFallback/);
 assert.doesNotMatch(client, /select\('date_evenement,statut,materiel_reserve'\)\.eq\('date_evenement'/);
 assert.match(client, /form\.reset\(\);clearClientDraft\(\)/);
-assert.match(client, /navigator\.serviceWorker\.register\('\.\/sw\.js'\)/);
+assert.doesNotMatch(client, /navigator\.serviceWorker\.register\('\.\/sw\.js'\)/);
 assert.match(client, /client\.functions\.invoke\('submit-reservation-request'/);
 assert.doesNotMatch(client, /client\.from\('demandes_reservation'\)\.insert/);
 assert.match(client, /publicRequestAttempt\|\|=crypto\.randomUUID\(\)/);
@@ -48,11 +52,25 @@ assert.match(workflows, /workflowRpc\('admin_delete_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_update_reservation'/);
 assert.match(workflows, /function openReservationEditor/);
 
-assert.match(worker, /fampro-events-v136/);
+assert.match(worker, /fampro-events-v137/);
+assert.match(admin, /admin-workflows\.js\?v=137/);
 assert.match(client, /client-catalog-sync\.js\?v=136/);
 assert.match(admin, /admin-freshness\.js\?v=136/);
+assert.match(worker, /customer-sharing\.js\?v=137/);
+assert.match(worker, /pwa-update\.js\?v=137/);
+assert.match(pwaUpdate, /controllerchange/);
+assert.match(pwaUpdate, /registration\.update\(\)/);
+assert.match(pwaUpdate, /updateViaCache: "none"/);
+for (const page of [client, admin, login]) {
+  assert.match(page, /<script src="pwa-update\.js\?v=137"><\/script>/);
+  assert.doesNotMatch(page, /navigator\.serviceWorker\.register\('\.\/sw\.js'\)/);
+}
 assert.doesNotMatch(worker, /cdn\.jsdelivr\.net.*cache\.put/);
 assert.match(worker, /origin!==self\.location\.origin/);
+const cachedAssets = [...worker.matchAll(/'\.\/([^']+)'/g)]
+  .map(([, asset]) => asset.split('?')[0])
+  .filter(Boolean);
+await Promise.all(cachedAssets.map(asset => read(asset)));
 
 for (const table of ['clients', 'demandes_reservation', 'reservations', 'paiements', 'factures']) {
   assert.match(migration, new RegExp(`alter table public\\.${table} enable row level security`));
@@ -76,9 +94,31 @@ assert.match(finishMigration, /reservation_request_idempotency_request_idx/);
 assert.match(editMigration, /create or replace function public\.admin_update_reservation/);
 assert.match(editMigration, /reservation\.id <> p_reservation/);
 assert.match(editMigration, /update public\.factures set montant_total = new_amount/);
+assert.match(staffBaseMigration, /create table if not exists public\.staff_accounts/);
+assert.match(staffBaseMigration, /create or replace function private\.staff_can\(permission_name text\)/);
+assert.match(staffBaseMigration, /from auth\.users[\s\S]*where lower\(email\) = 'mourtadafam@gmail\.com'/);
+assert.doesNotMatch(staffBaseMigration, /values\s*\(\s*'[0-9a-f]{8}-[0-9a-f-]{27,}'/i);
 assert.match(auditMigration, /alter table public\.staff_activity enable row level security/);
-assert.match(auditMigration, /private\.staff_can\('staff'\)/);
 assert.match(auditMigration, /revoke all on function private\.log_staff_activity\(\) from public, anon, authenticated/);
+assert.match(staffMigration, /create or replace function private\.staff_is_admin\(\)/);
+assert.match(staffMigration, /create or replace function private\.staff_can\(permission_name text\)/);
+assert.match(staffMigration, /create or replace function public\.admin_register_staff_account/);
+assert.match(staffMigration, /create policy "Admins read staff activity"[\s\S]*private\.staff_is_admin\(\)/);
+assert.match(staffMigration, /revoke all on table public\.staff_activity from public, anon, authenticated/);
+assert.match(staffMigration, /revoke all on table public\.staff_accounts from anon, authenticated/);
+assert.match(staffMigration, /private_fields text\[\]/);
+assert.match(staffMigration, /admin_create_reservation\(jsonb,uuid\)'[\s\S]*'reservations'/);
+assert.match(staffMigration, /admin_record_payment\(uuid,numeric,text,uuid\)'[\s\S]*'paiements'/);
+assert.match(staffMigration, /pg_get_functiondef/);
+assert.match(admin, /function reservationClient\(reservation\)\{return data\.clients\.find\(item=>String\(item\.id\)===String\(reservation\?\.client_id\)\)\|\|\{\}\}/);
+assert.match(admin, /Préparer pour WhatsApp/);
+assert.doesNotMatch(admin, /Le document PDF est joint à ce message/);
+assert.match(staffFunction, /callerAccount\.role !== "admin"/);
+assert.match(staffFunction, /npm:@supabase\/supabase-js@2\.116\.0/);
+assert.match(staffFunction, /admin_register_staff_account/);
+assert.match(staffFunction, /admin_set_staff_active/);
+assert.match(staffFunction, /deleteUser\(invitation\.user\.id/);
+assert.match(functionConfig, /\[functions\.manage-employee\][\s\S]*verify_jwt = true/);
 assert.match(admin, /async function buildCompleteBackup/);
 assert.match(admin, /backupTables=\['clients','reservations','paiements','materiel'/);
 
@@ -117,5 +157,14 @@ assert.equal(capacity - committed, 3);
 fakeReservations[0].status = 'Annulée';
 assert.equal(remainingFor({ stock: 100, reservations: fakeReservations, date: '2026-12-31', materialId: 'chairs' }), 100);
 assert.equal(Math.max(150000 - (50000 + 100000), 0), 0);
+
+await import(new URL('../customer-sharing.js', import.meta.url));
+const normalizePhone = globalThis.FAMproSharing.normalizeSenegalWhatsAppPhone;
+for (const input of ['77 287 52 52', '0772875252', '+221 77 287 52 52', '00221 77 287 52 52', '+221 (0) 77 287 52 52']) {
+  assert.equal(normalizePhone(input), '221772875252', `normalizes ${input}`);
+}
+for (const input of ['', '77287525', '221221772875252', '77ABC875252', '+33 6 12 34 56 78']) {
+  assert.equal(normalizePhone(input), '', `rejects ${input || 'blank phone'}`);
+}
 
 console.log('Production readiness checks and fake-data scenarios: OK');

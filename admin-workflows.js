@@ -130,9 +130,10 @@ savePaymentModal=async function(){return workflowRun('payment',async()=>{
 function prepareReservationForm(){
  editingReservationId=null;reservationAttempt=null;
  const title=document.querySelector('#newReservation .title'),button=document.querySelector('#newReservation .btn.full');
+ const mayRecordPayments=currentStaffAccount?.role==='admin'||currentStaffAccount?.permissions?.paiements;
  if(title)title.textContent='Nouvelle réservation';if(button)button.textContent='Enregistrer la réservation';
  reservationClient.value=Array.from(reservationClient.options).some(option=>option.value==='new')?'new':reservationClient.options[0]?.value||'';fillClient();
- eventType.selectedIndex=0;eventDate.value='';eventStatus.value='En attente';eventPlace.value='';eventTotal.value='';eventPaid.value='';eventPaid.disabled=false;eventChairs.value='0';eventMattresses.value='0';eventNotes.value='';
+ eventType.selectedIndex=0;eventDate.value='';eventStatus.value='En attente';eventPlace.value='';eventTotal.value='';eventPaid.value=mayRecordPayments?'':'0';eventPaid.disabled=!mayRecordPayments;eventChairs.value='0';eventMattresses.value='0';eventNotes.value='';
  renderMaterialPicker();
 }
 const workflowBaseShow=show;
@@ -160,7 +161,7 @@ saveReservation=async function(){return workflowRun('reservation',async()=>{
   if(!current)throw new Error('Réservation introuvable.');
   if(payload.montant_total<Number(current.montant_paye||0))throw new Error('Le total ne peut pas être inférieur au montant déjà payé.');
   await workflowRpc('admin_update_reservation',{p_reservation:id,p_data:{client_id:payload.client_id,client_nom:payload.client_nom,type_evenement:payload.type_evenement,date_evenement:payload.date_evenement,lieu:payload.lieu,montant_total:payload.montant_total,statut:payload.statut,chaises:payload.chaises,matelas:payload.matelas,notes:payload.notes,materiel_reserve:payload.materiel_reserve}});
-  editingReservationId=null;eventPaid.disabled=false;await loadData();show('reservations');alert('Réservation modifiée. Le stock et la facture ont été actualisés.');return;
+  editingReservationId=null;eventPaid.disabled=!(currentStaffAccount?.role==='admin'||currentStaffAccount?.permissions?.paiements);await loadData();show('reservations');alert('Réservation modifiée. Le stock et la facture ont été actualisés.');return;
  }
  const signature=JSON.stringify(payload);
  if(reservationAttempt&&reservationAttempt.signature!==signature)throw new Error('Vérifiez d’abord si la réservation précédente a été enregistrée.');
