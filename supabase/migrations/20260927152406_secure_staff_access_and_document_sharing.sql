@@ -48,7 +48,7 @@ as $function$
   )
 $function$;
 
-create or replace function private.staff_can(requested_permission text)
+create or replace function private.staff_can(permission_name text)
 returns boolean
 language sql
 stable
@@ -62,7 +62,7 @@ as $function$
       and account.active = true
       and (
         account.role = 'admin'
-        or coalesce(account.permissions -> requested_permission, 'false'::jsonb) = 'true'::jsonb
+        or coalesce(account.permissions -> permission_name, 'false'::jsonb) = 'true'::jsonb
       )
   )
 $function$;
@@ -342,6 +342,9 @@ drop policy if exists "Admins read staff activity" on public.staff_activity;
 create policy "Admins read staff activity"
 on public.staff_activity for select to authenticated
 using ((select private.staff_is_admin()));
+
+revoke all on table public.staff_activity from public, anon, authenticated;
+grant select on table public.staff_activity to authenticated;
 
 create or replace function private.log_staff_activity()
 returns trigger

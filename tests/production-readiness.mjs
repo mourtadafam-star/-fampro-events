@@ -101,9 +101,10 @@ assert.doesNotMatch(staffBaseMigration, /values\s*\(\s*'[0-9a-f]{8}-[0-9a-f-]{27
 assert.match(auditMigration, /alter table public\.staff_activity enable row level security/);
 assert.match(auditMigration, /revoke all on function private\.log_staff_activity\(\) from public, anon, authenticated/);
 assert.match(staffMigration, /create or replace function private\.staff_is_admin\(\)/);
-assert.match(staffMigration, /create or replace function private\.staff_can\(requested_permission text\)/);
+assert.match(staffMigration, /create or replace function private\.staff_can\(permission_name text\)/);
 assert.match(staffMigration, /create or replace function public\.admin_register_staff_account/);
 assert.match(staffMigration, /create policy "Admins read staff activity"[\s\S]*private\.staff_is_admin\(\)/);
+assert.match(staffMigration, /revoke all on table public\.staff_activity from public, anon, authenticated/);
 assert.match(staffMigration, /revoke all on table public\.staff_accounts from anon, authenticated/);
 assert.match(staffMigration, /private_fields text\[\]/);
 assert.match(staffMigration, /admin_create_reservation\(jsonb,uuid\)'[\s\S]*'reservations'/);
