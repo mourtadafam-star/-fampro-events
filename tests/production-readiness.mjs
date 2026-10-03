@@ -29,6 +29,8 @@ assert.match(client, /href="#reserver">Faire une réservation<\/a>/);
 assert.match(client, /addSignupPasswordPreview\('signup-password'\)/);
 assert.match(client, /addSignupPasswordPreview\('signup-password-confirm'\)/);
 assert.match(client, /clearSignupPasswordPreview\(\);clearSignupConfirmPreview\(\)/);
+assert.match(client, /portal\.querySelector\('#signup-password'\)\.autocomplete='off'/);
+assert.match(client, /signupPasswordConfirm\.autocomplete='off'/);
 assert.match(client, /@media\(max-width:700px\)\{\.publicite\{margin-top:24px\}\.publicite-card\{grid-template-columns:86px 1fr/);
 
 for (const page of [client, admin, login]) {
@@ -51,7 +53,7 @@ assert.match(workflows, /workflowRpc\('admin_delete_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_update_reservation'/);
 assert.match(workflows, /function openReservationEditor/);
 
-assert.match(worker, /fampro-events-v140/);
+assert.match(worker, /fampro-events-v141/);
 assert.match(client, /client-catalog-sync\.js\?v=136/);
 assert.match(admin, /admin-freshness\.js\?v=136/);
 assert.doesNotMatch(worker, /cdn\.jsdelivr\.net.*cache\.put/);
