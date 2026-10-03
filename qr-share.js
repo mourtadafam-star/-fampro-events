@@ -66,4 +66,8 @@
         }
       });
   };
+
+  // These buttons stored the previous function when the main page initialized.
+  qrShareCard.onclick = shareCustomerQr;
+  qrShareMenuButton.onclick = shareCustomerQr;
 })();
