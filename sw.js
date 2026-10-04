@@ -1,5 +1,5 @@
-const CACHE='fampro-events-v147';
-const ASSETS=['./','./index.html','./admin-workflows.js?v=106','./admin-freshness.js?v=136','./qr-share.js?v=138','./login.html','./client.html','./confirmation-client.html','./client-catalog-sync.js?v=145','./manifest.webmanifest','./client.webmanifest','./092508DF-3780-43EC-8976-384F9EF65BE0.png','./table-doree.png','./fampro-espace-client-qr.png'];
+const CACHE='fampro-events-v148';
+const ASSETS=['./','./index.html','./admin-workflows.js?v=107','./admin-freshness.js?v=136','./qr-share.js?v=138','./login.html','./client.html','./confirmation-client.html','./client-catalog-sync.js?v=145','./manifest.webmanifest','./client.webmanifest','./092508DF-3780-43EC-8976-384F9EF65BE0.png','./table-doree.png','./fampro-espace-client-qr.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('fampro-events-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
