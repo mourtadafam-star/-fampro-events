@@ -1,7 +1,9 @@
 (() => {
   const fallbackPhoto = '092508DF-3780-43EC-8976-384F9EF65BE0.png';
+  const refreshInterval = 60 * 60 * 1000;
   let latestRequest = 0;
   let lastAutomaticRefresh = 0;
+  let automaticRefreshPromise = null;
 
   const catalogHead = document.querySelector('.catalog-head');
   const syncStatus = document.createElement('p');
@@ -64,15 +66,19 @@
     });
 
     renderClientCatalog();
+    renderClientMaterialChoice();
     syncStatus.textContent = `Matériel à jour · ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
   }
 
-  async function refreshMaterialState() {
-    if (document.hidden) return;
+  function refreshMaterialState() {
+    if (document.hidden || automaticRefreshPromise || Date.now() - lastAutomaticRefresh < refreshInterval) return;
     lastAutomaticRefresh = Date.now();
-    await syncCatalog();
-    const selectedDate = document.getElementById('date')?.value;
-    if (selectedDate) await refreshDateAvailability(selectedDate);
+    automaticRefreshPromise = (async () => {
+      await syncCatalog();
+      const selectedDate = document.getElementById('date')?.value;
+      if (selectedDate) await refreshDateAvailability(selectedDate);
+    })().finally(() => { automaticRefreshPromise = null; });
+    return automaticRefreshPromise;
   }
 
   loadClientCatalogFromSupabase = syncCatalog;
@@ -80,12 +86,9 @@
   window.addEventListener('focus', refreshMaterialState);
   window.addEventListener('online', refreshMaterialState);
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && Date.now() - lastAutomaticRefresh > 1500) refreshMaterialState();
-  });
-  setInterval(() => {
     if (!document.hidden) refreshMaterialState();
-  }, 15000);
+  });
+  setInterval(refreshMaterialState, refreshInterval);
 
   refreshMaterialState();
-  setTimeout(refreshMaterialState, 800);
 })();
