@@ -47,13 +47,16 @@ signupFormElement.addEventListener('submit',async event=>{
   try{
     const {data,error}=await client.auth.signUp({email,password,options:{data:{nom,telephone},emailRedirectTo:clientAuthReturnUrl}});
     if(error)throw error;
-    const message=data.session?'Compte créé.':'Compte créé. Vérifiez votre e-mail puis connectez-vous ici.';
-    if(data.session)await loadPortal();
-    setSignupStatus(message,'success');
-    setPortalMessage(message,'success');
+    if(!data.session){
+      try{sessionStorage.setItem('fampro-pending-signup-email',email)}catch(storageError){}
+      window.location.assign('confirmation-client.html');
+      return;
+    }
+    await loadPortal();
+    setSignupStatus('Compte créé. Bienvenue dans votre espace client.','success');
+    setPortalMessage('Compte créé. Bienvenue dans votre espace client.','success');
     location.hash='mon-espace';
-    if(!data.session&&data.user?.identities?.length)offerConfirmationResend(email);
-    if(data.session||data.user?.identities?.length)offerPasswordSave(email,password);
+    offerPasswordSave(email,password);
     document.querySelector('#signup-password').value='';
   }catch(error){
     const message=error?.code==='unexpected_failure'

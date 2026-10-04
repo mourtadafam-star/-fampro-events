@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#9b0712">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Vérifiez votre e-mail | FAMpro Évents</title>
+  <link rel="icon" href="092508DF-3780-43EC-8976-384F9EF65BE0.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
+  <style>
+    :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#211b1d;background:#faf7f7}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:linear-gradient(160deg,#5c0008 0,#a60713 38%,#faf7f7 38%);padding:24px}
+    main{max-width:620px;margin:40px auto;background:#fff;border:1px solid #efdddd;border-radius:22px;box-shadow:0 22px 70px #30080d30;overflow:hidden}
+    header{text-align:center;padding:28px 28px 20px;border-bottom:1px solid #f1e3e4}
+    header img{width:76px;height:76px;object-fit:contain;border-radius:16px;background:#fff}
+    header strong{display:block;color:#9b0712;font-size:22px;margin-top:8px}
+    header small{color:#724e53}
+    .content{padding:28px}
+    .icon{display:grid;place-items:center;width:62px;height:62px;border-radius:50%;background:#fce9eb;color:#a60713;font-size:30px;margin:0 auto 14px}
+    h1{text-align:center;font-size:clamp(25px,5vw,34px);line-height:1.16;margin:0 0 12px}
+    .lead{text-align:center;color:#62585b;font-size:16px;line-height:1.55;margin:0 0 24px}
+    ol{list-style:none;padding:0;margin:0 0 24px;display:grid;gap:12px}
+    li{display:flex;gap:12px;align-items:flex-start;background:#fff8f8;border:1px solid #f1e5e6;border-radius:12px;padding:12px}
+    li b{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:50%;background:#a60713;color:#fff}
+    li span{line-height:1.4}
+    .action{display:block;text-align:center;text-decoration:none;background:#a60713;color:#fff;border-radius:11px;padding:13px 16px;font-weight:800}
+    details{margin-top:22px;border-top:1px solid #eee;padding-top:17px}
+    summary{cursor:pointer;color:#a60713;font-weight:750}
+    label{display:block;margin:15px 0 6px;font-size:14px;font-weight:700}
+    input{display:block;width:100%;padding:12px;border:1px solid #d9c8ca;border-radius:9px;font:inherit}
+    form button{margin-top:12px;width:100%;padding:12px;border:0;border-radius:9px;background:#eee8e9;color:#7d0610;font:inherit;font-weight:800;cursor:pointer}
+    form button:disabled{opacity:.6;cursor:wait}
+    #resend-message{min-height:22px;margin:10px 0 0;font-size:14px}
+    .success{color:#167447}.error{color:#a60713}
+    @media(max-width:600px){body{padding:12px}main{margin:18px auto}.content{padding:23px 18px}}
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <img src="092508DF-3780-43EC-8976-384F9EF65BE0.png" alt="Logo FAMpro Évents">
+      <strong>FAMpro Évents</strong>
+      <small>Nous créons, vous célébrez.</small>
+    </header>
+    <div class="content">
+      <div class="icon" aria-hidden="true">✉</div>
+      <h1>Vérifiez votre e-mail</h1>
+      <p class="lead">Votre demande de création de compte a été prise en compte. Pour terminer l’inscription, ouvrez le message de confirmation envoyé à votre adresse e-mail.</p>
+      <ol>
+        <li><b>1</b><span>Consultez votre boîte de réception et vos courriers indésirables.</span></li>
+        <li><b>2</b><span>Cliquez sur le lien de confirmation dans le message FAMpro Évents.</span></li>
+        <li><b>3</b><span>Vous reviendrez directement sur le site client pour accéder à votre espace.</span></li>
+      </ol>
+      <a class="action" href="client.html#mon-espace">Retourner au site client</a>
+      <details>
+        <summary>Vous n’avez pas reçu le message ?</summary>
+        <form id="resend-form">
+          <label for="resend-email">Votre adresse e-mail</label>
+          <input id="resend-email" type="email" autocomplete="email" required placeholder="vous@exemple.com">
+          <button type="submit">Renvoyer l’e-mail de confirmation</button>
+          <p id="resend-message" role="status" aria-live="polite"></p>
+        </form>
+      </details>
+    </div>
+  </main>
+  <script>
+    const emailInput=document.querySelector('#resend-email');
+    try{emailInput.value=sessionStorage.getItem('fampro-pending-signup-email')||''}catch(storageError){}
+    document.querySelector('#resend-form').addEventListener('submit',async event=>{
+      event.preventDefault();
+      const button=event.submitter,message=document.querySelector('#resend-message');
+      button.disabled=true;
+      message.className='';
+      message.textContent='Envoi en cours…';
+      try{
+        if(!window.supabase?.createClient)throw new Error('Supabase indisponible');
+        const client=window.supabase.createClient('https://paegdthtusbwxuarhacb.supabase.co','sb_publishable_OBQ-QtNhsEX5GJvStmY5JQ_Z0QwaWNm');
+        const {error}=await client.auth.resend({type:'signup',email:emailInput.value.trim(),options:{emailRedirectTo:'https://famproevents.com/client.html'}});
+        if(error)throw error;
+        message.className='success';
+        message.textContent='Si cette adresse attend une confirmation, un nouveau message a été demandé. Vérifiez aussi les courriers indésirables.';
+      }catch(error){
+        message.className='error';
+        message.textContent='Envoi impossible pour le moment. Réessayez dans quelques minutes.';
+      }finally{button.disabled=false}
+    });
+  </script>
+</body>
+</html>
