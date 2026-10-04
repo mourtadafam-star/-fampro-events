@@ -657,7 +657,7 @@ document.getElementById('downloadBackupButton').onclick=()=>exportCompleteBackup
 const homeWithBackupReminder=home;home=function(){homeWithBackupReminder();document.getElementById('dashboardBackupReminder')?.remove();if(currentStaffAccount?.role!=='admin'||new URLSearchParams(location.search).get('staffPreview')==='1')return;const last=localStorage.getItem('fampro_last_backup'),stale=!last||Date.now()-new Date(last).getTime()>7*86400000;if(!stale)return;const reminder=document.createElement('div');reminder.id='dashboardBackupReminder';reminder.className='backup-reminder';reminder.innerHTML='<b>🔒 Sauvegarde recommandée</b><br>Conservez régulièrement une copie de vos données FAMpro.<br><button class="btn secondary small" type="button">Ouvrir les sauvegardes</button>';reminder.querySelector('button').onclick=()=>show('settings');(document.getElementById('dashboardClientRequests')||document.getElementById('dashboardPriorities'))?.insertAdjacentElement('afterend',reminder)};
 
 </script>
-<script src="admin-workflows.js?v=105"></script>
+<script src="admin-workflows.js?v=106"></script>
 <script src="admin-freshness.js?v=136"></script>
 <script src="qr-share.js?v=138"></script>
 </body></html>

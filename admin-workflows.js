@@ -136,7 +136,7 @@ function prepareReservationForm(){
  renderMaterialPicker();
 }
 const workflowBaseShow=show;
-show=function(id,...args){if(id==='newReservation')prepareReservationForm();return workflowBaseShow(id,...args);};
+show=function(id,...args){const result=workflowBaseShow(id,...args);if(id==='newReservation')prepareReservationForm();return result;};
 
 function openReservationEditor(id){
  const reservation=data.reservations.find(item=>String(item.id)===String(id));
