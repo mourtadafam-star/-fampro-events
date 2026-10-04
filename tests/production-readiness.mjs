@@ -48,6 +48,8 @@ assert.match(admin, /table:'materiel'/);
 assert.doesNotMatch(admin, /loadData=async function\(\)\{await loadDataWithClientRequestSummary\(\);home\(\)\}/);
 assert.match(admin, /!\/\(annul\|refus\)\/i\.test\(status\(r\)\)/);
 assert.match(admin, /material\.quantite_disponible/);
+assert.doesNotMatch(admin, /card\.querySelector\('\.row:last-child'\)/);
+assert.match(admin, /actions=card\.querySelector\(':scope > \.row:last-of-type'\)/);
 
 assert.match(workflows, /workflowRpc\('admin_create_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_record_payment'/);
@@ -56,8 +58,8 @@ assert.match(workflows, /workflowRpc\('admin_delete_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_update_reservation'/);
 assert.match(workflows, /function openReservationEditor/);
 
-assert.match(worker, /fampro-events-v142/);
-assert.match(client, /client-catalog-sync\.js\?v=136/);
+assert.match(worker, /fampro-events-v145/);
+assert.match(client, /client-catalog-sync\.js\?v=145/);
 assert.match(admin, /admin-freshness\.js\?v=136/);
 assert.doesNotMatch(worker, /cdn\.jsdelivr\.net.*cache\.put/);
 assert.match(worker, /origin!==self\.location\.origin/);
