@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, auditMigration, publicFunction, functionConfig] = await Promise.all([
+const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, auditMigration, publicFunction, functionConfig, requestReservationMigration] = await Promise.all([
   read('client.html'),
   read('index.html'),
   read('admin-workflows.js'),
@@ -13,7 +13,8 @@ const [client, admin, workflows, worker, login, migration, finishMigration, edit
   read('supabase/migrations/20260920113450_add_reservation_edit_workflow.sql'),
   read('supabase/migrations/20260927015236_add_staff_activity_audit_log.sql'),
   read('supabase/functions/submit-reservation-request/index.ts'),
-  read('supabase/config.toml')
+  read('supabase/config.toml'),
+  read('supabase/migrations/20261004150000_client_requests_create_pending_reservations.sql')
 ]);
 
 assert.match(client, /client\.rpc\('get_material_availability'/);
@@ -50,6 +51,8 @@ assert.match(admin, /!\/\(annul\|refus\)\/i\.test\(status\(r\)\)/);
 assert.match(admin, /material\.quantite_disponible/);
 assert.doesNotMatch(admin, /card\.querySelector\('\.row:last-child'\)/);
 assert.match(admin, /actions=card\.querySelector\(':scope > \.row:last-of-type'\)/);
+assert.match(admin, /button\.textContent='Voir réservation'/);
+assert.match(admin, /openReservationDetail\(reservation\.id\)/);
 
 assert.match(workflows, /workflowRpc\('admin_create_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_record_payment'/);
@@ -58,7 +61,7 @@ assert.match(workflows, /workflowRpc\('admin_delete_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_update_reservation'/);
 assert.match(workflows, /function openReservationEditor/);
 
-assert.match(worker, /fampro-events-v145/);
+assert.match(worker, /fampro-events-v146/);
 assert.match(client, /client-catalog-sync\.js\?v=145/);
 assert.match(admin, /admin-freshness\.js\?v=136/);
 assert.doesNotMatch(worker, /cdn\.jsdelivr\.net.*cache\.put/);
@@ -89,6 +92,9 @@ assert.match(editMigration, /update public\.factures set montant_total = new_amo
 assert.match(auditMigration, /alter table public\.staff_activity enable row level security/);
 assert.match(auditMigration, /private\.staff_can\('staff'\)/);
 assert.match(auditMigration, /revoke all on function private\.log_staff_activity\(\) from public, anon, authenticated/);
+assert.match(requestReservationMigration, /after insert on public\.demandes_reservation/);
+assert.match(requestReservationMigration, /p_request\.id, linked_client/);
+assert.match(requestReservationMigration, /'En attente', p_request\.message/);
 assert.match(admin, /async function buildCompleteBackup/);
 assert.match(admin, /backupTables=\['clients','reservations','paiements','materiel'/);
 
