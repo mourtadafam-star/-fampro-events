@@ -131,7 +131,9 @@ function prepareReservationForm(){
  editingReservationId=null;reservationAttempt=null;
  const title=document.querySelector('#newReservation .title'),button=document.querySelector('#newReservation .btn.full');
  if(title)title.textContent='Nouvelle réservation';if(button)button.textContent='Enregistrer la réservation';
- reservationClient.value=Array.from(reservationClient.options).some(option=>option.value==='new')?'new':reservationClient.options[0]?.value||'';fillClient();
+ const clientSelect=document.getElementById('reservationClient');
+ if(!(clientSelect instanceof HTMLSelectElement))throw new Error('Le sélecteur de client est indisponible.');
+ clientSelect.value='new';fillClient();
  eventType.selectedIndex=0;eventDate.value='';eventStatus.value='En attente';eventPlace.value='';eventTotal.value='';eventPaid.value='';eventPaid.disabled=false;eventChairs.value='0';eventMattresses.value='0';eventNotes.value='';
  renderMaterialPicker();
 }
@@ -144,7 +146,7 @@ function openReservationEditor(id){
  sourceClientRequest=null;show('newReservation');editingReservationId=id;
  document.querySelector('#newReservation .title').textContent='Modifier la réservation';
  document.querySelector('#newReservation .btn.full').textContent='Enregistrer les modifications';
- reservationClient.value=String(reservation.client_id||'');fillClient();clientName.value=reservation.client_nom||name(reservation);eventType.value=reservation.type_evenement||'Autre';eventDate.value=reservation.date_evenement||'';eventStatus.value=reservation.statut||'En attente';eventPlace.value=reservation.lieu||'';eventTotal.value=Number(reservation.montant_total)||0;eventPaid.value=Number(reservation.montant_paye)||0;eventPaid.disabled=true;eventChairs.value=Number(reservation.chaises)||0;eventMattresses.value=Number(reservation.matelas)||0;eventNotes.value=reservation.notes||'';
+ document.getElementById('reservationClient').value=String(reservation.client_id||'');fillClient();clientName.value=reservation.client_nom||name(reservation);eventType.value=reservation.type_evenement||'Autre';eventDate.value=reservation.date_evenement||'';eventStatus.value=reservation.statut||'En attente';eventPlace.value=reservation.lieu||'';eventTotal.value=Number(reservation.montant_total)||0;eventPaid.value=Number(reservation.montant_paye)||0;eventPaid.disabled=true;eventChairs.value=Number(reservation.chaises)||0;eventMattresses.value=Number(reservation.matelas)||0;eventNotes.value=reservation.notes||'';
  renderMaterialPicker();
  const grouped={};for(const item of reservedItems(reservation)){const key=String(item.id);grouped[key]=(grouped[key]||0)+(Number(item.quantite)||0)}
  for(const [materialId,quantity] of Object.entries(grouped)){const input=document.querySelector(`[data-material-id="${CSS.escape(materialId)}"]`);if(!input)continue;input.max=String((Number(input.max)||0)+quantity);input.value=String(quantity)}
@@ -152,7 +154,7 @@ function openReservationEditor(id){
 }
 
 saveReservation=async function(){return workflowRun('reservation',async()=>{
- const payload={client_id:reservationClient.value,client_nom:clientName.value.trim(),telephone:clientPhone.value.trim(),adresse:clientAddress.value.trim(),type_evenement:eventType.value,date_evenement:eventDate.value,lieu:eventPlace.value.trim(),montant_total:Number(eventTotal.value),montant_paye:Number(eventPaid.value),statut:eventStatus.value,chaises:Number(eventChairs.value)||0,matelas:Number(eventMattresses.value)||0,notes:eventNotes.value.trim(),materiel_reserve:selectedReservationMaterials(),request_id:sourceClientRequest?.id||null,client_user_id:sourceClientRequest?.client_user_id||null};
+ const payload={client_id:document.getElementById('reservationClient').value,client_nom:clientName.value.trim(),telephone:clientPhone.value.trim(),adresse:clientAddress.value.trim(),type_evenement:eventType.value,date_evenement:eventDate.value,lieu:eventPlace.value.trim(),montant_total:Number(eventTotal.value),montant_paye:Number(eventPaid.value),statut:eventStatus.value,chaises:Number(eventChairs.value)||0,matelas:Number(eventMattresses.value)||0,notes:eventNotes.value.trim(),materiel_reserve:selectedReservationMaterials(),request_id:sourceClientRequest?.id||null,client_user_id:sourceClientRequest?.client_user_id||null};
  if(!payload.client_nom||!payload.date_evenement)throw new Error('Indiquez le client et la date.');
  if(!Number.isFinite(payload.montant_total)||!Number.isFinite(payload.montant_paye)||payload.montant_total<0||payload.montant_paye<0||payload.montant_paye>payload.montant_total)throw new Error('Vérifiez les montants de la réservation.');
  if(editingReservationId){
@@ -178,7 +180,7 @@ deleteReservation=async function(id){if(!confirm('Supprimer définitivement cett
 });};
 
 const workflowOpenReservationDetail=openReservationDetail;
-openReservationDetail=function(id){workflowOpenReservationDetail(id);const reservation=data.reservations.find(item=>String(item.id)===String(id)),actions=document.querySelector('#reservationDetailContent .detail-contact.no-print');if(!reservation||!actions||/(annul|refus)/i.test(status(reservation))||actions.querySelector('[data-edit-reservation]'))return;const button=document.createElement('button');button.type='button';button.className='btn secondary';button.dataset.editReservation='';button.textContent='Modifier';button.onclick=()=>{try{openReservationEditor(id)}catch(error){console.error('Ouverture de la réservation impossible',error);alert('Impossible d’ouvrir la modification : '+(error?.message||'erreur inconnue')+'\n'+String(error?.stack||'').split('\n').slice(1,3).join('\n'))}};actions.insertBefore(button,actions.firstChild);};
+openReservationDetail=function(id){workflowOpenReservationDetail(id);const reservation=data.reservations.find(item=>String(item.id)===String(id)),actions=document.querySelector('#reservationDetailContent .detail-contact.no-print');if(!reservation||!actions||/(annul|refus)/i.test(status(reservation))||actions.querySelector('[data-edit-reservation]'))return;const button=document.createElement('button');button.type='button';button.className='btn secondary';button.dataset.editReservation='';button.textContent='Modifier';button.onclick=()=>{try{openReservationEditor(id)}catch(error){console.error('Ouverture de la réservation impossible',error);alert('Impossible d’ouvrir la modification : '+(error?.message||'erreur inconnue'))}};actions.insertBefore(button,actions.firstChild);};
 
 // Independent PDF instances: no automatic invoice stamp on other documents.
 function workflowPdf(title){
