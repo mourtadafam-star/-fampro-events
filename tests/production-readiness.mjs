@@ -61,7 +61,7 @@ assert.match(workflows, /workflowRpc\('admin_delete_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_update_reservation'/);
 assert.match(workflows, /function openReservationEditor/);
 
-assert.match(worker, /fampro-events-v150/);
+assert.match(worker, /fampro-events-v151-seo/);
 assert.doesNotMatch(workflows, /Array\.from\(reservationClient\.options\)/);
 assert.match(workflows, /const result=workflowBaseShow\(id,\.\.\.args\);if\(id==='newReservation'\)prepareReservationForm\(\)/);
 assert.match(client, /client-catalog-sync\.js\?v=145/);

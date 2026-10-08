@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://famproevents.com/client.html</loc>
-  </url>
+  <url><loc>https://famproevents.com/client.html</loc></url>
+  <url><loc>https://famproevents.com/location-tentes.html</loc></url>
+  <url><loc>https://famproevents.com/location-mobilier.html</loc></url>
+  <url><loc>https://famproevents.com/decoration-evenementielle.html</loc></url>
 </urlset>

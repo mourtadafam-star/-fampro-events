@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="fr">
-<head>
+<head><meta name="robots" content="noindex,follow">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#b30712">
@@ -42,7 +42,7 @@
       const passwordInput = document.querySelector('#password');
       const button = document.querySelector('#submit');
       const message = document.querySelector('#message');
-      const appUrl = new URL('./', window.location.href).href;
+      const appUrl = new URL('./index.html', window.location.href).href;
       const showMessage = (text, type = '') => { message.textContent = text; message.className = type; };
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
