@@ -4,6 +4,11 @@
       "source": "/",
       "destination": "/client.html",
       "permanent": true
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/092508DF-3780-43EC-8976-384F9EF65BE0.png",
+      "permanent": true
     }
   ],
   "headers": [
