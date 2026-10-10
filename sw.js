@@ -1,5 +1,5 @@
-const CACHE='fampro-events-v156';
-const ASSETS=['./','./index.html','./admin-workflows.js?v=109','./admin-freshness.js?v=136','./qr-share.js?v=138','./login.html','./client.html','./location-tentes.html','./location-mobilier.html','./decoration-evenementielle.html','./confirmation-client.html','./client-catalog-sync.js?v=145','./client-portal-documents.js?v=151','./client-navigation.js?v=156','./manifest.webmanifest','./client.webmanifest','./092508DF-3780-43EC-8976-384F9EF65BE0.png','./table-doree.png','./fampro-espace-client-qr.png'];
+const CACHE='fampro-events-v157';
+const ASSETS=['./','./index.html','./admin-workflows.js?v=109','./admin-freshness.js?v=136','./qr-share.js?v=138','./login.html','./client.html','./location-tentes.html','./location-mobilier.html','./decoration-evenementielle.html','./confirmation-client.html','./client-catalog-sync.js?v=145','./client-portal-documents.js?v=151','./client-navigation.js?v=156','./client-auth-passwordless.js?v=157','./manifest.webmanifest','./client.webmanifest','./092508DF-3780-43EC-8976-384F9EF65BE0.png','./table-doree.png','./fampro-espace-client-qr.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('fampro-events-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
