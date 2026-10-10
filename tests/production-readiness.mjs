@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, auditMigration, publicFunction, functionConfig, requestReservationMigration] = await Promise.all([
+const [client, admin, workflows, worker, login, migration, finishMigration, editMigration, auditMigration, publicFunction, functionConfig, requestReservationMigration, clientDocuments] = await Promise.all([
   read('client.html'),
   read('index.html'),
   read('admin-workflows.js'),
@@ -14,7 +14,8 @@ const [client, admin, workflows, worker, login, migration, finishMigration, edit
   read('supabase/migrations/20260927015236_add_staff_activity_audit_log.sql'),
   read('supabase/functions/submit-reservation-request/index.ts'),
   read('supabase/config.toml'),
-  read('supabase/migrations/20261004150000_client_requests_create_pending_reservations.sql')
+  read('supabase/migrations/20261004150000_client_requests_create_pending_reservations.sql'),
+  read('client-portal-documents.js')
 ]);
 
 assert.match(client, /client\.rpc\('get_material_availability'/);
@@ -61,10 +62,15 @@ assert.match(workflows, /workflowRpc\('admin_delete_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_update_reservation'/);
 assert.match(workflows, /function openReservationEditor/);
 
-assert.match(worker, /fampro-events-v151-seo/);
+assert.match(worker, /fampro-events-v152/);
 assert.doesNotMatch(workflows, /Array\.from\(reservationClient\.options\)/);
 assert.match(workflows, /const result=workflowBaseShow\(id,\.\.\.args\);if\(id==='newReservation'\)prepareReservationForm\(\)/);
 assert.match(client, /client-catalog-sync\.js\?v=145/);
+assert.match(client, /client-portal-documents\.js\?v=151/);
+assert.match(worker, /client-portal-documents\.js\?v=151/);
+assert.match(clientDocuments, /Télécharger la facture PDF/);
+assert.match(clientDocuments, /\.eq\('auth_user_id', user\.id\)/);
+assert.match(clientDocuments, /ownIds\.has\(String\(row\.reservation_id\)\)/);
 assert.match(admin, /admin-freshness\.js\?v=136/);
 assert.doesNotMatch(worker, /cdn\.jsdelivr\.net.*cache\.put/);
 assert.match(worker, /origin!==self\.location\.origin/);
