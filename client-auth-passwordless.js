@@ -17,7 +17,7 @@
   let inFlight = false;
 
   const style = document.createElement('style');
-  style.textContent = '.email-auth-note{font-size:13px;line-height:1.45;color:#ffe3e6;margin:8px 0 0}.email-auth-code{border:1px solid #ebd5d8;border-radius:14px;padding:18px;margin:17px 0;background:#fff8f8}.email-auth-code[hidden],.email-auth-social[hidden]{display:none}.email-auth-code h3{margin:0 0 6px}.email-auth-code p{margin:0 0 11px;color:var(--muted);font-size:14px}.email-auth-code label{display:block;font-size:13px;font-weight:800;margin:8px 0 5px}.email-auth-code input{width:100%;max-width:240px;padding:12px;border:1px solid #d8c8cb;border-radius:9px;font:inherit;font-size:18px;letter-spacing:.16em}.email-auth-code .btn{margin-top:10px}.email-auth-code button:disabled,.email-link-button:disabled{opacity:.55;cursor:wait}.email-auth-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:11px}.email-auth-actions button,.email-link-button{border:0;background:transparent;color:var(--red);font:inherit;font-size:13px;font-weight:800;cursor:pointer;padding:7px 0}.email-link-button{display:block;margin-top:7px}.email-auth-social{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.email-auth-social button{border:1px solid #dfd1d3;border-radius:9px;background:#fff;color:#272026;padding:10px 12px;font:inherit;font-weight:750;cursor:pointer}@media(max-width:700px){.email-auth-code{padding:15px}.email-auth-code input,.email-auth-code .btn{max-width:none;width:100%}.email-auth-social button{width:100%}}';
+  style.textContent = '.email-auth-note{font-size:13px;line-height:1.45;color:#ffe3e6;margin:8px 0 0}.email-auth-code{border:1px solid #ebd5d8;border-radius:14px;padding:18px;margin:17px 0;background:#fff8f8}.email-auth-code[hidden],.oauth-confirm[hidden]{display:none!important}.email-auth-code h3{margin:0 0 6px}.email-auth-code p{margin:0 0 11px;color:var(--muted);font-size:14px}.email-auth-code label{display:block;font-size:13px;font-weight:800;margin:8px 0 5px}.email-auth-code input{width:100%;max-width:240px;padding:12px;border:1px solid #d8c8cb;border-radius:9px;font:inherit;font-size:18px;letter-spacing:.16em}.email-auth-code .btn{margin-top:10px}.email-auth-code button:disabled,.email-link-button:disabled{opacity:.55;cursor:wait}.email-auth-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:11px}.email-auth-actions button,.email-link-button{border:0;background:transparent;color:var(--red);font:inherit;font-size:13px;font-weight:800;cursor:pointer;padding:7px 0}.email-link-button{display:block;margin-top:7px}.oauth-signup .oauth-buttons{display:grid;gap:10px;margin-top:18px}.oauth-signup .oauth-buttons button{width:100%;min-height:48px;border:1px solid #e9d5d8;border-radius:10px;background:#fff;color:#272026;padding:12px;font:800 15px system-ui,sans-serif;cursor:pointer}.oauth-signup .oauth-buttons button:focus-visible{outline:3px solid #ffb4bb}.oauth-signup .privacy-note{margin-top:14px}.oauth-email-fallback{margin-top:12px}.oauth-email-fallback summary{cursor:pointer;color:var(--red);font-size:13px;font-weight:800;padding:8px}.oauth-email-fallback .signup-card{margin-top:8px}.oauth-confirm{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:18px;background:#18050ac7}.oauth-confirm>div{width:min(100%,420px);padding:24px;border-radius:18px;background:#fff;box-shadow:0 20px 60px #0004}.oauth-confirm h3{margin:0 0 8px}.oauth-confirm p{margin:0 0 14px;line-height:1.5;overflow-wrap:anywhere}.oauth-confirm .btn{width:100%}.oauth-confirm button[data-change-account]{display:block;margin:12px auto 0;border:0;background:none;color:var(--red);font:700 13px system-ui;cursor:pointer}@media(max-width:700px){.email-auth-code{padding:15px}.email-auth-code input,.email-auth-code .btn{max-width:none;width:100%}}';
   document.head.append(style);
 
   const signup = document.createElement('form');
@@ -42,10 +42,17 @@
   const codeMessage = codeArea.querySelector('#email-auth-message');
   const resendButton = codeArea.querySelector('#email-auth-resend');
   const codeForm = codeArea.querySelector('#email-code-form');
-  const social = document.createElement('div');
-  social.className = 'email-auth-social';
-  social.hidden = true;
-  signIn.append(social);
+  const oauthSignup = document.createElement('section');
+  oauthSignup.className = 'signup-card oauth-signup';
+  oauthSignup.innerHTML = '<h3>Créer mon compte ou me connecter</h3><p class="form-lead">Choisissez votre compte Google ou Apple. Aucune autre information ni mot de passe ne vous sera demandé.</p><div class="oauth-buttons"></div><p class="privacy-note"><span>🔒</span><span>Google ou Apple vérifie votre identité avant l’ouverture de votre espace client.</span></p>';
+  const oauthConfirm = document.createElement('div');
+  oauthConfirm.className = 'oauth-confirm';
+  oauthConfirm.hidden = true;
+  oauthConfirm.setAttribute('role', 'dialog');
+  oauthConfirm.setAttribute('aria-modal', 'true');
+  oauthConfirm.setAttribute('aria-label', 'Confirmer votre adresse');
+  oauthConfirm.innerHTML = '<div><h3>Votre adresse est vérifiée</h3><p>Continuer avec <strong id="oauth-confirm-email"></strong> ?</p><button type="button" class="btn" data-confirm-account>Continuer avec cette adresse</button><button type="button" data-change-account>Choisir un autre compte</button></div>';
+  document.body.append(oauthConfirm);
 
   const readJSON = (key, fallback) => {
     try { return JSON.parse(sessionStorage.getItem(key) || 'null') ?? fallback; }
@@ -70,6 +77,12 @@
   const returnUrl = section => {
     const url = new URL('/client.html', location.origin);
     url.searchParams.set('auth_return', knownSections.has(section) ? section : 'mon-espace');
+    return url.href;
+  };
+  const oauthReturnUrl = (section, provider) => {
+    const url = new URL('https://famproevents.com/client.html');
+    url.searchParams.set('auth_return', knownSections.has(section) ? section : 'mon-espace');
+    url.searchParams.set('auth_provider', provider);
     return url.href;
   };
   const frenchError = error => {
@@ -189,6 +202,20 @@
   });
 
   let finishing = false;
+  let oauthConfirmed = false;
+  oauthConfirm.querySelector('[data-confirm-account]').addEventListener('click', () => {
+    oauthConfirmed = true;
+    oauthConfirm.hidden = true;
+    finishAuth();
+  });
+  oauthConfirm.querySelector('[data-change-account]').addEventListener('click', async () => {
+    oauthConfirm.hidden = true;
+    pending = null;
+    try { sessionStorage.removeItem(pendingKey); } catch (_) {}
+    await client.auth.signOut();
+    portalHome.hidden = true;
+    authArea.hidden = false;
+  });
   async function finishAuth() {
     if (finishing) return;
     finishing = true;
@@ -196,12 +223,21 @@
     if (!session) { finishing = false; return; }
     const hasReturnQuery = new URLSearchParams(location.search).has('auth_return');
     if (!pending && !hasReturnQuery) { finishing = false; return; }
+    const provider = pending?.provider || new URLSearchParams(location.search).get('auth_provider');
+    if (['google', 'apple'].includes(provider) && !oauthConfirmed && session.user?.email) {
+      oauthConfirm.querySelector('#oauth-confirm-email').textContent = session.user.email;
+      oauthConfirm.hidden = false;
+      oauthConfirm.querySelector('[data-confirm-account]').focus();
+      finishing = false;
+      return;
+    }
     const section = hasReturnQuery ? returnSection() : pending.section;
     codeArea.hidden = true;
     pending = null;
     try { sessionStorage.removeItem(pendingKey); } catch (_) {}
     const url = new URL(location.href);
     url.searchParams.delete('auth_return');
+    url.searchParams.delete('auth_provider');
     url.hash = '#' + (knownSections.has(section) ? section : 'mon-espace');
     history.replaceState({ ...(history.state || {}), famproNav: true }, '', url.pathname + url.search + url.hash);
     await loadPortal();
@@ -209,35 +245,60 @@
     finishing = false;
   }
   pending = readJSON(pendingKey, null);
-  if (pending?.email && Date.now() - pending.createdAt < 60 * 60_000) showCodeArea();
-  else pending = null;
+  const callbackQuery = new URLSearchParams(location.search);
+  if ((pending?.provider || callbackQuery.has('auth_provider')) && callbackQuery.has('error')) {
+    pending = null;
+    try { sessionStorage.removeItem(pendingKey); } catch (_) {}
+    authArea.querySelector('#portal-message').textContent = 'Connexion annulée ou refusée. Choisissez de nouveau votre compte.';
+    authArea.querySelector('#portal-message').className = 'message error';
+    const cleanUrl = new URL(location.href);
+    for (const key of ['error', 'error_code', 'error_description', 'auth_return', 'auth_provider']) cleanUrl.searchParams.delete(key);
+    history.replaceState(history.state, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+  }
+  if (pending && Date.now() - pending.createdAt < 60 * 60_000) {
+    if (pending.email) showCodeArea();
+  } else pending = null;
   client.auth.onAuthStateChange(event => {
     if (event === 'SIGNED_IN') setTimeout(finishAuth, 0);
   });
   client.auth.getSession().then(finishAuth).catch(() => {});
 
-  // Supabase's public settings endpoint reveals only enabled providers, never credentials.
+  // Only expose working providers. Keep email signup available until one is configured.
   fetch(`${client.supabaseUrl}/auth/v1/settings`, { headers: { apikey: client.supabaseKey } })
     .then(response => response.ok ? response.json() : null)
     .then(settings => {
-      for (const provider of ['google', 'apple']) {
-        if (!settings?.external?.[provider]) continue;
+      const providers = ['google', 'apple'].filter(provider => settings?.external?.[provider] === true);
+      if (!providers.length) return;
+      const methods = document.createElement('div');
+      methods.id = 'client-signup-methods';
+      const fallback = document.createElement('details');
+      fallback.className = 'oauth-email-fallback';
+      fallback.innerHTML = '<summary>Utiliser plutôt une adresse e-mail</summary>';
+      signup.replaceWith(methods);
+      fallback.append(signup);
+      methods.append(oauthSignup, fallback);
+      for (const provider of providers) {
         const button = document.createElement('button');
         button.type = 'button';
         button.textContent = `Continuer avec ${provider === 'google' ? 'Google' : 'Apple'}`;
         button.addEventListener('click', async () => {
+          button.disabled = true;
+          oauthConfirmed = false;
           const section = returnSection();
-          pending = { section, createdAt: Date.now() };
+          pending = { provider, section, createdAt: Date.now() };
           saveJSON(pendingKey, pending);
-          const { error } = await client.auth.signInWithOAuth({ provider, options: { redirectTo: returnUrl(section) } });
-          if (error) {
+          try {
+            const { error } = await client.auth.signInWithOAuth({ provider, options: { redirectTo: oauthReturnUrl(section, provider) } });
+            if (error) throw error;
+          } catch (error) {
             pending = null;
+            try { sessionStorage.removeItem(pendingKey); } catch (_) {}
             authArea.querySelector('#portal-message').textContent = frenchError(error);
             authArea.querySelector('#portal-message').className = 'message error';
+            button.disabled = false;
           }
         });
-        social.append(button);
-        social.hidden = false;
+        oauthSignup.querySelector('.oauth-buttons').append(button);
       }
     }).catch(() => {});
 })();
