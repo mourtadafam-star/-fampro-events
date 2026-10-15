@@ -143,3 +143,10 @@ assert.equal(remainingFor({ stock: 100, reservations: fakeReservations, date: '2
 assert.equal(Math.max(150000 - (50000 + 100000), 0), 0);
 
 console.log('Production readiness checks and fake-data scenarios: OK');
+
+// Photos du matériel : compression systématique (WebP, 1400 px) et cache long (noms uniques) pour limiter la bande passante Supabase.
+assert.match(admin, /canvas\.toBlob\(resolve,'image\/webp',0\.82\)/);
+assert.match(admin, /maximum=1400/);
+assert.match(admin, /\['image\/jpeg','image\/webp'\]\.includes\(file\.type\)&&file\.size<=350\*1024/);
+assert.doesNotMatch(admin, /file\.size<=4\.5\*1024\*1024\)return file/);
+assert.match(admin, /cacheControl:'31536000'/);
