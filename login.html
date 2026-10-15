@@ -28,10 +28,19 @@
       <button id="submit" type="submit">Se connecter</button>
       <p id="message" role="status" aria-live="polite"></p>
     </form>
+    <form id="code-form" hidden>
+      <label for="mfa-code">Code de vérification</label>
+      <p style="margin:0 0 12px">Entrez le code à 6 chiffres affiché dans votre application d’authentification.</p>
+      <input id="mfa-code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" pattern="[0-9 ]{6,7}" required placeholder="123456">
+      <button id="code-submit" type="submit">Valider le code</button>
+      <button id="code-cancel" type="button" style="background:#fff;color:var(--blue);border:1px solid var(--line)">Utiliser un autre compte</button>
+      <p id="code-message" role="status" aria-live="polite"></p>
+    </form>
     <p class="note">Les données clients restent privées et ne sont chargées qu’après connexion.</p>
     <p class="note"><a href="client.html" style="color:#1677c8;font-weight:750">Vous êtes client ? Découvrez nos services et faites une demande de réservation.</a></p>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.min.js" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
+  <script src="admin-mfa.js?v=158"></script>
   <script>
     (() => {
       const SUPABASE_URL = 'https://paegdthtusbwxuarhacb.supabase.co';
@@ -44,6 +53,37 @@
       const message = document.querySelector('#message');
       const appUrl = new URL('./index.html', window.location.href).href;
       const showMessage = (text, type = '') => { message.textContent = text; message.className = type; };
+      const codeForm = document.querySelector('#code-form');
+      const codeInput = document.querySelector('#mfa-code');
+      const codeButton = document.querySelector('#code-submit');
+      const codeMessage = document.querySelector('#code-message');
+      // Double authentification : si le compte l’a activée, le code est exigé avant d’ouvrir l’administration.
+      async function continuer() {
+        if (await window.FamproMfa.codeRequis(supabaseClient)) {
+          form.hidden = true; codeForm.hidden = false; codeInput.focus();
+          return;
+        }
+        window.location.replace(appUrl);
+      }
+      codeForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (codeButton.disabled) return;
+        codeButton.disabled = true;
+        codeMessage.textContent = 'Vérification…'; codeMessage.className = '';
+        try {
+          await window.FamproMfa.verifierCode(supabaseClient, codeInput.value);
+          window.location.replace(appUrl);
+        } catch (error) {
+          codeMessage.textContent = error.message || 'Code refusé.'; codeMessage.className = 'error';
+          codeInput.select();
+        } finally {
+          codeButton.disabled = false;
+        }
+      });
+      document.querySelector('#code-cancel').addEventListener('click', async () => {
+        await supabaseClient.auth.signOut();
+        codeForm.hidden = true; form.hidden = false; passwordInput.value = ''; showMessage('');
+      });
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
         if (button.disabled) return;
@@ -58,7 +98,8 @@
             showMessage(error.message, 'error');
             return;
           }
-          window.location.replace(appUrl);
+          showMessage('');
+          await continuer();
         } catch (error) {
           showMessage(error.message || 'Impossible de se connecter. Vérifiez vos informations.', 'error');
         } finally {
@@ -67,7 +108,7 @@
       });
       async function initializeAuth() {
         try {
-          if (!window.supabase?.createClient) {
+          if (!window.supabase?.createClient || !window.FamproMfa) {
             button.disabled = true;
             showMessage('Le service de connexion n’a pas pu être chargé. Rechargez la page pour réessayer.', 'error');
             return;
@@ -75,7 +116,7 @@
           supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
           const { data, error } = await supabaseClient.auth.getSession();
           if (error) throw error;
-          if (data.session) window.location.replace(appUrl);
+          if (data.session) await continuer();
         } catch (error) {
           // A late session-check failure must not replace the form result.
           if (!message.textContent) showMessage(error.message || 'Impossible de vérifier la session.', 'error');

@@ -33,7 +33,7 @@
     syncStatus.classList.remove('error');
 
     const result = await client
-      .from('materiel')
+      .from('materiel_catalogue')
       .select('id,nom,categorie,quantite_totale,quantite_disponible,photo_url,unite,notes,updated_at')
       .order('nom', { ascending: true });
 

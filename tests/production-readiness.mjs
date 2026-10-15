@@ -62,10 +62,10 @@ assert.match(workflows, /workflowRpc\('admin_delete_reservation'/);
 assert.match(workflows, /workflowRpc\('admin_update_reservation'/);
 assert.match(workflows, /function openReservationEditor/);
 
-assert.match(worker, /fampro-events-v152/);
+assert.match(worker, /const CACHE='fampro-events-v\d+'/);
 assert.doesNotMatch(workflows, /Array\.from\(reservationClient\.options\)/);
 assert.match(workflows, /const result=workflowBaseShow\(id,\.\.\.args\);if\(id==='newReservation'\)prepareReservationForm\(\)/);
-assert.match(client, /client-catalog-sync\.js\?v=145/);
+assert.match(client, /client-catalog-sync\.js\?v=158/);
 assert.match(client, /client-portal-documents\.js\?v=151/);
 assert.match(worker, /client-portal-documents\.js\?v=151/);
 assert.match(clientDocuments, /Télécharger la facture PDF/);
@@ -150,3 +150,23 @@ assert.match(admin, /maximum=1400/);
 assert.match(admin, /\['image\/jpeg','image\/webp'\]\.includes\(file\.type\)&&file\.size<=350\*1024/);
 assert.doesNotMatch(admin, /file\.size<=4\.5\*1024\*1024\)return file/);
 assert.match(admin, /cacheControl:'31536000'/);
+
+// Audit du 15/10 : catalogue public, double authentification, en-têtes de sécurité.
+{
+  const [catalogSync, mfa, vercel] = await Promise.all([read('client-catalog-sync.js'), read('admin-mfa.js'), read('vercel.json')]);
+  assert.match(catalogSync, /\.from\('materiel_catalogue'\)/);
+  assert.doesNotMatch(catalogSync, /\.from\('materiel'\)/);
+  assert.doesNotMatch(client, /client\.from\('materiel'\)/);
+  assert.match(login, /admin-mfa\.js\?v=\d+/);
+  assert.match(login, /await window\.FamproMfa\.codeRequis\(supabaseClient\)/);
+  assert.match(admin, /admin-mfa\.js\?v=\d+/);
+  assert.match(mfa, /challengeAndVerify/);
+  assert.doesNotMatch(mfa, /\.innerHTML\s*=/);
+  assert.match(worker, /admin-mfa\.js\?v=\d+/);
+  const headers = JSON.parse(vercel).headers.find(h => h.source === '/(.*)').headers;
+  const h = Object.fromEntries(headers.map(x => [x.key, x.value]));
+  assert.match(h['Content-Security-Policy'], /frame-ancestors 'self'/);
+  assert.equal(h['X-Content-Type-Options'], 'nosniff');
+  assert.ok(h['Strict-Transport-Security']);
+}
+console.log('Audit 15/10 : OK');
