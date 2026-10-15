@@ -320,21 +320,30 @@ function isMaterialPhoto(file){
   return Boolean(file&&(String(file.type||'').startsWith('image/')||/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name||'')));
 }
 
+// Photos du matériel : toujours redimensionnées (1400 px max) et compressées en WebP (JPEG si le navigateur ne sait pas
+// produire du WebP). Une photo de téléphone de 2 à 5 Mo devient ~100–300 Ko : le catalogue client consomme ~15 fois moins
+// de bande passante Supabase. Seules les photos déjà légères (≤ 350 Ko, JPEG/WebP) sont envoyées telles quelles.
 async function prepareMaterialPhoto(file){
   if(!file)return null;
   if(!isMaterialPhoto(file))throw new Error('Choisissez une photo depuis votre galerie ou votre appareil photo.');
   if(file.size>20*1024*1024)throw new Error('La photo est trop volumineuse. Choisissez une image de moins de 20 Mo.');
-  if(['image/jpeg','image/png','image/webp'].includes(file.type)&&file.size<=4.5*1024*1024)return file;
+  if(['image/jpeg','image/webp'].includes(file.type)&&file.size<=350*1024)return file;
   const sourceUrl=URL.createObjectURL(file);
   try{
     const image=await new Promise((resolve,reject)=>{const element=new Image();element.onload=()=>resolve(element);element.onerror=()=>reject(new Error('Cette photo ne peut pas être lue sur ce téléphone.'));element.src=sourceUrl});
-    const maximum=1800,scale=Math.min(1,maximum/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement('canvas');
+    const maximum=1400,scale=Math.min(1,maximum/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement('canvas');
     canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
-    canvas.getContext('2d',{alpha:false}).drawImage(image,0,0,canvas.width,canvas.height);
-    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.84));
+    const context=canvas.getContext('2d');context.drawImage(image,0,0,canvas.width,canvas.height);
+    let blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',0.82));
+    if(!blob||blob.type!=='image/webp'){
+      // Navigateur sans encodage WebP : JPEG sur fond blanc (pas de transparence en JPEG).
+      context.globalCompositeOperation='destination-over';context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);
+      blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.82));
+    }
     if(!blob)throw new Error('La conversion de la photo a échoué.');
+    const extension=blob.type==='image/webp'?'webp':'jpg';
     const base=(file.name||'photo').replace(/\.[^.]+$/,'').replace(/[^a-z0-9_-]+/gi,'-').slice(0,60)||'photo';
-    return new File([blob],`${base}.jpg`,{type:'image/jpeg',lastModified:Date.now()});
+    return new File([blob],`${base}.${extension}`,{type:blob.type,lastModified:Date.now()});
   }finally{URL.revokeObjectURL(sourceUrl)}
 }
 
@@ -358,7 +367,7 @@ async function uploadMaterialPhoto(file){
   const extension=(prepared.name.split('.').pop()||'jpg').toLowerCase();
   const unique=crypto.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const path=`${unique}.${extension}`;
-  const uploaded=await supabaseClient.storage.from('materiel-images').upload(path,prepared,{cacheControl:'60',contentType:prepared.type||'image/jpeg',upsert:false});
+  const uploaded=await supabaseClient.storage.from('materiel-images').upload(path,prepared,{cacheControl:'31536000',contentType:prepared.type||'image/jpeg',upsert:false});
   if(uploaded.error)throw uploaded.error;
   const publicUrl=supabaseClient.storage.from('materiel-images').getPublicUrl(uploaded.data.path);
   return publicUrl.data.publicUrl;
