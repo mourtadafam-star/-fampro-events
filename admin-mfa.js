@@ -1,7 +1,8 @@
 // Double authentification (code à 6 chiffres d’une application comme Google Authenticator) pour l’administration.
 // - login.html : demande le code après le mot de passe quand le compte a activé la double authentification.
-// - index.html : renvoie vers la connexion si la session n’a pas été confirmée par le code, et ajoute la carte
-//   « Double authentification » dans Paramètres pour l’activer.
+// - index.html : renvoie vers la connexion si la session n’a pas été confirmée par le code.
+//   La carte « Double authentification » n’est plus affichée dans Paramètres (décision du 15/10) ;
+//   carteParametres reste disponible si elle doit être réactivée.
 // Aucune donnée n’est insérée via innerHTML : tout est créé avec textContent.
 (() => {
   'use strict';
@@ -107,14 +108,12 @@
 
   window.FamproMfa = Object.freeze({ codeRequis, verifierCode, carteParametres });
 
-  // Administration : garde de session + carte Paramètres.
+  // Administration : garde de session uniquement.
   if (typeof supabaseClient !== 'undefined' && document.getElementById('settings') !== null) {
     (async () => {
       try {
         if (await codeRequis(supabaseClient)) { location.replace('login.html?code=1'); return; }
       } catch (_) { /* session absente : les gardes existantes renvoient déjà vers login.html */ }
-      const settings = document.getElementById('settings');
-      if (settings) carteParametres(supabaseClient, settings).catch(() => {});
     })();
   }
 })();

@@ -161,6 +161,7 @@ assert.match(admin, /cacheControl:'31536000'/);
   assert.match(login, /await window\.FamproMfa\.codeRequis\(supabaseClient\)/);
   assert.match(admin, /admin-mfa\.js\?v=\d+/);
   assert.match(mfa, /challengeAndVerify/);
+  assert.doesNotMatch(mfa, /carteParametres\(supabaseClient/);
   assert.doesNotMatch(mfa, /\.innerHTML\s*=/);
   assert.match(worker, /admin-mfa\.js\?v=\d+/);
   const headers = JSON.parse(vercel).headers.find(h => h.source === '/(.*)').headers;
